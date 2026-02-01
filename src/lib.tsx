@@ -30,7 +30,7 @@ export const flattenTree = (node: NodeData, result: NodeData[] = []) => {
 
 export const findDescendantsByIdInTree = (
   node: NodeData,
-  id: number,
+  id: number | string,
   result: NodeData[] = [],
 ) => {
   if (node.id === id) {
@@ -59,7 +59,7 @@ export const findDescendantsByIdInTree = (
 
 export const findDescendantsByIdInFlatTree = (
   flatTree: NodeData[],
-  id: number,
+  id: number | string,
   result: NodeData[] = [],
 ) => {
   for (const item of flatTree) {
@@ -72,8 +72,8 @@ export const findDescendantsByIdInFlatTree = (
 };
 
 export const findAncestorsByIdInFlatTreeMap = (
-  flatTreeMap: Map<number, NodeData>,
-  id: number,
+  flatTreeMap: Map<number | string, NodeData>,
+  id: number | string,
   result: NodeData[] = [],
 ) => {
   const currentNode = flatTreeMap.get(id);

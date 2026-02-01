@@ -6,8 +6,9 @@ interface NoteTreeProps {
   flatTree: NodeData[];
 }
 
+// support multi-root tree
 const NoteTree = ({ flatTree }: NoteTreeProps) => {
-  const nodesMap = new Map<number, NodeData>();
+  const nodesMap = new Map<number | string, NodeData>();
   flatTree.forEach((node) => {
     nodesMap.set(node.id, node);
   });
@@ -21,8 +22,10 @@ const NoteTree = ({ flatTree }: NoteTreeProps) => {
       (item) => item.expanded !== false,
     );
 
-    const edgeVisible = node.pid && areAllAncestorsExpanded;
-    const nodeVisible = !node.pid || areAllAncestorsExpanded;
+    const edgeVisible =
+      node.pid && areAllAncestorsExpanded && node.nodeType !== "deleted";
+    const nodeVisible =
+      (!node.pid || (areAllAncestorsExpanded)) && node.nodeType !== "deleted";
 
     if (edgeVisible) {
       const parent = ancestorNodes[0];
