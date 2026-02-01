@@ -1,5 +1,6 @@
 import type { NodeData } from "../types";
 
+// 树形结构只是为了方便测试和展示，如：人工添加、编辑、删除结点
 const tree: NodeData = {
   id: 1,
   label: "today",
@@ -49,4 +50,17 @@ const tree: NodeData = {
   ],
 };
 
-export { tree };
+const flattenedTree: NodeData[] = [
+  { id: 1, label: "today", x: 100, y: 100, pid: null },
+  { id: 2, label: "study", x: 300, y: 40, pid: 1 },
+  // { id: 5, label: "js", x: 500, y: 40, pid: 2 },
+  // { id: 6, label: "project", x: 500, y: 100, pid: 2 },
+  // { id: 3, label: "game", x: 300, y: 100, pid: 1 },
+  // { id: 4, label: "code", x: 300, y: 200, pid: 1 },
+  // { id: 7, label: "work", x: 500, y: 200, pid: 4 },
+
+  { id: 8, label: "tomorrow", x: 200, y: 300, pid: null },
+  // { id: 9, label: "sleep", x: 400, y: 300, pid: 8 },
+];
+
+export { tree, flattenedTree };

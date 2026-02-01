@@ -10,7 +10,7 @@ import PaperContext from "../context/paperContext";
 import { findDescendantsByIdInFlatTree } from "../lib";
 
 interface NoteNodeProps {
-  id: number;
+  id: number | string;
   x: number;
   y: number;
   label: string;
@@ -18,7 +18,7 @@ interface NoteNodeProps {
 }
 
 const createNodeMenuEvent = (detail: {
-  nodeId: number;
+  nodeId: number | string;
   source: "longtap" | "contextmenu";
 }) => {
   return new CustomEvent("nodemenu", {
@@ -67,7 +67,7 @@ export default function NoteNode({ id, x, y, label, expanded }: NoteNodeProps) {
     startY: 0,
   });
 
-  const descendantIdsRef = useRef<number[]>([]);
+  const descendantIdsRef = useRef<(number | string)[]>([]);
   const hasChildren = useMemo(() => {
     return flatTree?.some((item) => item.pid === id);
   }, [flatTree, id]);
@@ -243,9 +243,10 @@ export default function NoteNode({ id, x, y, label, expanded }: NoteNodeProps) {
               ...item,
               x: item.x + deltaX * (viewportZoom ?? 1),
               y: item.y + deltaY * (viewportZoom ?? 1),
+              nodeType: !item.nodeType ? 'edited' : item.nodeType
             };
           } else {
-            return item;
+            return item
           }
         });
       });

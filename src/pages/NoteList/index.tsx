@@ -3,6 +3,7 @@ import Button from "../../components/Button";
 import type { NoteListItem } from "../../types/note";
 import useModal from "../../components/useModal";
 import { API_BASE_URL } from "../../api";
+import { Link } from "react-router";
 
 export default function NoteList() {
   const [notes, setNotes] = useState<NoteListItem[]>([]);
@@ -23,7 +24,7 @@ export default function NoteList() {
   };
 
   const confirmCreateNote = async () => {
-    const response = await fetch(`${API_BASE_URL}/note/add`, {
+    const response = await fetch(`${API_BASE_URL}/notes/add`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -53,7 +54,7 @@ export default function NoteList() {
   };
 
   const confirmEditNote = async () => {
-    const response = await fetch(`${API_BASE_URL}/note/edit`, {
+    const response = await fetch(`${API_BASE_URL}/notes/edit`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -83,7 +84,7 @@ export default function NoteList() {
   };
 
   const confirmDeleteNote = async () => {
-    const response = await fetch(`${API_BASE_URL}/note/delete`, {
+    const response = await fetch(`${API_BASE_URL}/notes/delete`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -100,7 +101,7 @@ export default function NoteList() {
   };
 
   const getNotes = async () => {
-    const response = await fetch(`${API_BASE_URL}/note/list`);
+    const response = await fetch(`${API_BASE_URL}/notes/list`);
     const res = await response.json();
     if (res.code === 0) {
       setNotes(res.data);
@@ -125,6 +126,9 @@ export default function NoteList() {
             <div>{note.title}</div>
 
             <div className="">
+              <Button className="mr-2" type="primary">
+                <Link to={`/noteDetails/${note.id}`}>detail</Link>
+              </Button>
               <Button className="mr-2" onClick={() => handleEditNote(note)}>
                 edit
               </Button>
@@ -137,61 +141,63 @@ export default function NoteList() {
       </div>
 
       {/* modals */}
-      <AddModal
-        header="new note"
-        footer={
-          <div>
-            <Button onClick={closeAddModal}>cancel</Button>
-            <Button type="primary" onClick={confirmCreateNote}>
-              confirm
-            </Button>
-          </div>
-        }
-      >
-        <label>
-          Title:
-          <input
-            type="text"
-            className="bg-textarea w-full p-2 outline-none"
-            value={newNoteTitle}
-            onChange={(e) => setNewNoteTitle(e.target.value)}
-          />
-        </label>
-      </AddModal>
+      <>
+        <AddModal
+          header="new note"
+          footer={
+            <div>
+              <Button onClick={closeAddModal}>cancel</Button>
+              <Button type="primary" onClick={confirmCreateNote}>
+                confirm
+              </Button>
+            </div>
+          }
+        >
+          <label>
+            Title:
+            <input
+              type="text"
+              className="bg-textarea w-full p-2 outline-none"
+              value={newNoteTitle}
+              onChange={(e) => setNewNoteTitle(e.target.value)}
+            />
+          </label>
+        </AddModal>
 
-      <EditModal
-        header="edit note"
-        footer={
-          <div>
-            <Button onClick={closeEditModal}>cancel</Button>
-            <Button type="primary" onClick={confirmEditNote}>
-              confirm
-            </Button>
-          </div>
-        }
-      >
-        <label>
-          new title:
-          <input
-            type="text"
-            className="bg-textarea w-full p-2 outline-none"
-            value={newNoteTitle}
-            onChange={(e) => setNewNoteTitle(e.target.value)}
-          />
-        </label>
-      </EditModal>
+        <EditModal
+          header="edit note"
+          footer={
+            <div>
+              <Button onClick={closeEditModal}>cancel</Button>
+              <Button type="primary" onClick={confirmEditNote}>
+                confirm
+              </Button>
+            </div>
+          }
+        >
+          <label>
+            new title:
+            <input
+              type="text"
+              className="bg-textarea w-full p-2 outline-none"
+              value={newNoteTitle}
+              onChange={(e) => setNewNoteTitle(e.target.value)}
+            />
+          </label>
+        </EditModal>
 
-      <DeleteConfirmModal
-        header="are you sure to delete this note?"
-        footer={
-          <div>
-            <Button onClick={closeDeleteConfirmModal}>cancel</Button>
-            <Button type="primary" onClick={confirmDeleteNote}>
-              confirm
-            </Button>
-          </div>
-        }
-      ></DeleteConfirmModal>
+        <DeleteConfirmModal
+          header="are you sure to delete this note?"
+          footer={
+            <div>
+              <Button onClick={closeDeleteConfirmModal}>cancel</Button>
+              <Button type="primary" onClick={confirmDeleteNote}>
+                confirm
+              </Button>
+            </div>
+          }
+        ></DeleteConfirmModal>
+      </>
     </div>
   );
 }
