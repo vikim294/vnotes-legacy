@@ -678,7 +678,7 @@ function NoteDetail() {
                 setFlatTree((prev) =>
                   prev.map((item) => {
                     if (item.id === selectedNodeIdRef.current) {
-                      const pNode = flatTree.find(
+                      const pNode = prev.find(
                         (item) => item.id === chosenParentNodeId,
                       ) as NodeData;
 

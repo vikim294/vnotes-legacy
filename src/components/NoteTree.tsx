@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { createLine, findAncestorsByIdInFlatTreeMap } from "../lib";
 import type { NodeData } from "../types";
 import NoteNode from "./NoteNode";
@@ -8,10 +9,13 @@ interface NoteTreeProps {
 
 // support multi-root tree
 const NoteTree = ({ flatTree }: NoteTreeProps) => {
-  const nodesMap = new Map<number | string, NodeData>();
-  flatTree.forEach((node) => {
-    nodesMap.set(node.id, node);
-  });
+  const nodesMap = useMemo<Map<number | string, NodeData>>(() => {
+    const map = new Map<number | string, NodeData>();
+    flatTree.forEach((node) => {
+      map.set(node.id, node);
+    });
+    return map;
+  }, [flatTree])
 
   const edges = [];
   const nodes = [];
