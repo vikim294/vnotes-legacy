@@ -29,13 +29,6 @@ const createNodeMenuEvent = (detail: {
 };
 
 export default function NoteNode({ id, x, y, label, expanded }: NoteNodeProps) {
-  const padding = 8;
-  const textRef = useRef<SVGTextElement>(null);
-  const [rectSize, setRectSize] = useState<{ width: number; height: number }>({
-    width: 0,
-    height: 0,
-  });
-
   // context
   const paperContext = use(PaperContext);
   const flatTree = paperContext?.flatTree;
@@ -194,16 +187,6 @@ export default function NoteNode({ id, x, y, label, expanded }: NoteNodeProps) {
     });
   };
 
-  useLayoutEffect(() => {
-    if (textRef.current) {
-      const bbox = textRef.current.getBBox();
-      // console.log("Text bounding box:", bbox);
-      setRectSize({
-        width: bbox.width + padding,
-        height: bbox.height + padding,
-      });
-    }
-  }, [label]);
 
   // drag node
   useEffect(() => {
@@ -243,10 +226,10 @@ export default function NoteNode({ id, x, y, label, expanded }: NoteNodeProps) {
               ...item,
               x: item.x + deltaX * (viewportZoom ?? 1),
               y: item.y + deltaY * (viewportZoom ?? 1),
-              nodeType: !item.nodeType ? 'edited' : item.nodeType
+              nodeType: !item.nodeType ? "edited" : item.nodeType,
             };
           } else {
-            return item
+            return item;
           }
         });
       });
@@ -333,26 +316,7 @@ export default function NoteNode({ id, x, y, label, expanded }: NoteNodeProps) {
       onClick={handleClick}
       onDoubleClick={handleDoubleClick}
     >
-      <rect
-        x={rectSize.width / -2}
-        y={rectSize.height / -2}
-        width={rectSize.width}
-        height={rectSize.height}
-        fill="black"
-        stroke="white"
-      />
-
-      <text
-        ref={textRef}
-        x={0}
-        y={0}
-        fill="white"
-        textAnchor="middle"
-        dominantBaseline="middle"
-        className="select-none"
-      >
-        {label}
-      </text>
+      <NodeLabel label={label}></NodeLabel>
 
       {hasChildren && (
         <text
@@ -368,5 +332,75 @@ export default function NoteNode({ id, x, y, label, expanded }: NoteNodeProps) {
         </text>
       )}
     </g>
+  );
+}
+
+const PADDING = 8;
+const TEXT_HEIGHT = 20.5
+
+interface NodeLabelProps {
+  label: string;
+}
+function NodeLabel({ label }: NodeLabelProps) {
+  const textList = label.split("\n");
+  const textsRef = useRef<Map<number, SVGTextElement>>(new Map());
+
+  const [rectSize, setRectSize] = useState<{ width: number; height: number }>({
+    width: 0,
+    height: 0,
+  });
+
+  useLayoutEffect(() => {
+    if (textsRef.current) {
+      const widthList: number[] = [];
+
+      for (const [index, text] of textsRef.current) {
+        const bbox = text.getBBox();
+        // console.log("Text bounding box:", bbox);
+
+        widthList.push(bbox.width);
+      }
+
+      setRectSize({
+        width: Math.max(...widthList) + PADDING,
+        height: textsRef.current.size * TEXT_HEIGHT,
+      });
+    }
+  }, [label]);
+
+  return (
+    <>
+      <rect
+        x={rectSize.width / -2}
+        y={rectSize.height / textList.length / -2}
+        width={rectSize.width}
+        height={rectSize.height}
+        fill="black"
+        stroke="white"
+      />
+
+      {textList.map((text, index) => (
+        <text
+          ref={(node) => {
+            if (node) {
+              textsRef.current.set(index, node);
+            }
+
+            return () => {
+              textsRef.current.delete(index);
+            };
+          }}
+          x={0}
+          y={0}
+          dy={index * 20}
+          fill="white"
+          textAnchor="middle"
+          dominantBaseline="middle"
+          className="select-none"
+        >
+          {text}
+        </text>
+      ))}
+    </>
   );
 }
