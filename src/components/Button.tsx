@@ -11,38 +11,26 @@ interface ButtonProps {
 
 export default function Button({
   children,
-  type,
+  type = "default",
   className,
   onClick,
 }: ButtonProps) {
-  let cn = "";
-
-  switch (type) {
-    case "primary":
-      cn = "bg-primary";
-
-      break;
-
-    case "secondary":
-      cn = "bg-secondary";
-
-      break;
-
-    case "danger":
-      cn = "bg-danger";
-
-      break;
-
-    default:
-      cn = "bg-plain";
-      break;
-  }
+  // Base button styles with enhanced theming
+  const baseStyles = "inline-flex items-center justify-center cursor-pointer px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 select-none focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900";
+  
+  // Type-specific styles with the new color palette
+  const typeStyles = {
+    primary: "bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 focus:ring-emerald-500",
+    secondary: "bg-slate-700 hover:bg-slate-600 text-slate-100 shadow-lg shadow-slate-700/20 hover:shadow-slate-700/30 focus:ring-slate-500",
+    danger: "bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white shadow-lg shadow-rose-500/20 hover:shadow-rose-500/30 focus:ring-rose-500",
+    default: "bg-slate-800 hover:bg-slate-700 text-slate-200 shadow-lg shadow-slate-800/20 hover:shadow-slate-800/30 focus:ring-slate-600"
+  };
 
   return (
     <button
       className={twMerge(
-        cn,
-        "inline-block cursor-pointer p-2 text-white select-none",
+        baseStyles,
+        typeStyles[type],
         className,
       )}
       onClick={onClick}

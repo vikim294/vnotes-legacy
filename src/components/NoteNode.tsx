@@ -375,8 +375,10 @@ function NodeLabel({ label }: NodeLabelProps) {
         y={rectSize.height / textList.length / -2}
         width={rectSize.width}
         height={rectSize.height}
-        fill="black"
-        stroke="white"
+        fill="var(--color-surface)"
+        stroke="var(--color-primary-300)"
+        rx="6"
+        ry="6"
       />
 
       {textList.map((text, index) => (

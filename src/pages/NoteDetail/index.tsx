@@ -589,9 +589,9 @@ function NoteDetail() {
         >
           <NoteTree flatTree={flatTree} />
         </svg>
-        <div className="fixed top-0 right-0 text-white">
+        <div className="fixed top-0 right-0 text-surface">
           {viewport.zoom !== 1 && (
-            <button onClick={resetZoom} className="cursor-pointer">
+            <button onClick={resetZoom} className="cursor-pointer hover:text-primary transition-colors">
               {viewport.zoom.toFixed(2)} reset zoom
             </button>
           )}
