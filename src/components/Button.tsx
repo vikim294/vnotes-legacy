@@ -1,6 +1,6 @@
 import { twMerge } from "tailwind-merge";
 
-type ButtonType = "primary" | "secondary" | "danger";
+type ButtonType = "primary" | "secondary" | "danger" | "default";
 
 interface ButtonProps {
   children: React.ReactNode;

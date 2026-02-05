@@ -354,7 +354,7 @@ function NodeLabel({ label }: NodeLabelProps) {
     if (textsRef.current) {
       const widthList: number[] = [];
 
-      for (const [index, text] of textsRef.current) {
+      for (const [, text] of textsRef.current) {
         const bbox = text.getBBox();
         // console.log("Text bounding box:", bbox);
 
