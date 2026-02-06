@@ -187,7 +187,6 @@ export default function NoteNode({ id, x, y, label, expanded }: NoteNodeProps) {
     });
   };
 
-
   // drag node
   useEffect(() => {
     const gElem = gRef.current;
@@ -335,8 +334,9 @@ export default function NoteNode({ id, x, y, label, expanded }: NoteNodeProps) {
   );
 }
 
-const PADDING = 8;
-const TEXT_HEIGHT = 20.5
+const PADDING_X = 16;
+const PADDING_Y = 10;
+const TEXT_HEIGHT = 20.5;
 
 interface NodeLabelProps {
   label: string;
@@ -362,8 +362,8 @@ function NodeLabel({ label }: NodeLabelProps) {
       }
 
       setRectSize({
-        width: Math.max(...widthList) + PADDING,
-        height: textsRef.current.size * TEXT_HEIGHT,
+        width: Math.max(...widthList) + PADDING_X,
+        height: textsRef.current.size * TEXT_HEIGHT + PADDING_Y,
       });
     }
   }, [label]);
@@ -372,11 +372,10 @@ function NodeLabel({ label }: NodeLabelProps) {
     <>
       <rect
         x={rectSize.width / -2}
-        y={rectSize.height / textList.length / -2}
+        y={rectSize.height / -2}
         width={rectSize.width}
         height={rectSize.height}
-        fill="var(--color-surface)"
-        stroke="var(--color-primary-300)"
+        fill="var(--color-node)"
         rx="6"
         ry="6"
       />
@@ -394,10 +393,10 @@ function NodeLabel({ label }: NodeLabelProps) {
           }}
           x={0}
           y={0}
-          dy={index * 20}
+          dy={index * TEXT_HEIGHT + ((textList.length - 1) * TEXT_HEIGHT) / -2}
           fill="white"
           textAnchor="middle"
-          dominantBaseline="middle"
+          dominantBaseline="central"
           className="select-none"
         >
           {text}
