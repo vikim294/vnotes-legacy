@@ -120,16 +120,16 @@ export default function NoteList() {
         </Button>
       </div>
 
-      <div className="mt-4 space-y-2">
+      <div className="mt-4 space-y-3">
         {notes.map((note) => (
-          <div key={note.id} className="flex justify-between text-white">
-            <div>{note.title}</div>
+          <div key={note.id} className="flex items-center justify-between p-3 rounded-lg bg-surface/50 backdrop-blur-sm border border-border/30">
+            <div className="text-foreground font-medium">{note.title}</div>
 
-            <div className="">
-              <Button className="mr-2" type="primary">
+            <div className="flex gap-2">
+              <Button className="" type="primary">
                 <Link to={`/noteDetails/${note.id}`}>detail</Link>
               </Button>
-              <Button className="mr-2" onClick={() => handleEditNote(note)}>
+              <Button className="" onClick={() => handleEditNote(note)}>
                 edit
               </Button>
               <Button type="danger" onClick={() => handleDeleteNote(note)}>

@@ -15,17 +15,27 @@ export default function useModal() {
     if (!visible) return null;
     return createPortal(
       <div
-        className="fixed top-0 right-0 bottom-0 left-0"
+        className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50"
         onPointerDown={closeModal}
       >
         <div
-          className={`bg-plain fixed top-1/2 left-1/2 -translate-1/2 text-white`}
+          className={`bg-surface-900 border border-surface-700 rounded-xl shadow-2xl max-w-full w-full`}
           style={{ width: width ?? 400 }}
           onPointerDown={(e) => e.stopPropagation()}
         >
-          <div>{header}</div>
-          <div>{children}</div>
-          <div>{footer}</div>
+          {header && (
+            <div className="px-6 py-4 border-b border-surface-700">
+              <h3 className="text-lg font-semibold text-slate-100">{header}</h3>
+            </div>
+          )}
+          <div className="px-6 py-4 text-slate-200">
+            {children}
+          </div>
+          {footer && (
+            <div className="px-6 py-4 bg-surface-800/50 rounded-b-xl flex justify-end gap-2">
+              {footer}
+            </div>
+          )}
         </div>
       </div>,
       document.body,
