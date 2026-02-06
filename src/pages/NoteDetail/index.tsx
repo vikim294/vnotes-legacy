@@ -65,7 +65,9 @@ function NoteDetail() {
   const [editMode, setEditMode] = useState(false);
   const [nodeMenuVisible, setNodeMenuVisible] = useState(false);
   const nodeMenuRef = useRef<NodeMenuExpose | null>(null);
-  const selectedNodeIdRef = useRef<number | null>(null);
+  const [selectedNodeId, setSelectedNodeId] = useState<number | string | null>(
+    null,
+  );
 
   // add new node
   const {
@@ -108,14 +110,15 @@ function NoteDetail() {
       flatTree,
       editMode,
       viewportZoom: viewport.zoom,
-      selectedNodeIdRef,
+      selectedNodeId,
+      setSelectedNodeId,
       nodeMenuRef,
       isChoosingParent,
       setFlatTree,
       setNodeMenuVisible,
       setChosenParentNodeId,
     }),
-    [flatTree, editMode, viewport.zoom, isChoosingParent],
+    [flatTree, editMode, viewport.zoom, selectedNodeId, isChoosingParent],
   );
 
   // data related
@@ -130,16 +133,16 @@ function NoteDetail() {
   const handleSaveEdit = async () => {
     // console.log("save edit:", flatTree);
 
-  // added 新增的结点
-  // 必有 uuid，无 id，无视 id
-  // 如果是新增的子结点，则
-  //                     有 puuid（如果是新增结点的子结点）
-  //                     有 pid（如果是旧结点的新增子结点）
-  // updated 旧结点
-  //     必有 id，无视 uuid
-  //     如果旧结点只更新了除 pid 之外的数据，pid 没变
-  //     如果旧结点更新了 pid 为 某个旧结点的 id
-  //     如果旧结点更新了 pid 为 某个新结点的 uuid
+    // added 新增的结点
+    // 必有 uuid，无 id，无视 id
+    // 如果是新增的子结点，则
+    //                     有 puuid（如果是新增结点的子结点）
+    //                     有 pid（如果是旧结点的新增子结点）
+    // updated 旧结点
+    //     必有 id，无视 uuid
+    //     如果旧结点只更新了除 pid 之外的数据，pid 没变
+    //     如果旧结点更新了 pid 为 某个旧结点的 id
+    //     如果旧结点更新了 pid 为 某个新结点的 uuid
 
     // 保存本次编辑结果到后端 API
     const added: NodeData[] = [];
@@ -206,8 +209,7 @@ function NoteDetail() {
   const handleNodeEdit = () => {
     // show the current value
     setNodeEditContent(
-      flatTree.find((node) => node.id === selectedNodeIdRef.current)?.label ??
-        "",
+      flatTree.find((node) => node.id === selectedNodeId)?.label ?? "",
     );
     openNodeEditModal();
   };
@@ -222,15 +224,28 @@ function NoteDetail() {
     setIsChoosingParent(true);
   };
 
+  const handleNodeToggleMark = () => {
+    if (!selectedNodeId) return;
+
+    setFlatTree((prev) => {
+      return prev.map((node) => {
+        if (node.id === selectedNodeId) {
+          return {
+            ...node,
+            marked: !node.marked,
+            nodeType: node.nodeType === "new" ? "new" : "edited",
+          };
+        }
+        return node;
+      });
+    });
+  };
+
   const handleNodeDelete = () => {
     openNodeDeleteConfirmModal();
   };
 
   const handleNodeMenuClose = () => {
-    // avoid selectedNodeIdRef.current inside setState being null too early
-    setTimeout(() => {
-      selectedNodeIdRef.current = null;
-    }, 0);
     setNodeMenuVisible(false);
   };
 
@@ -253,11 +268,11 @@ function NoteDetail() {
   };
 
   const handleNodeEditConfirm = () => {
-    if (!selectedNodeIdRef.current) return;
+    if (!selectedNodeId) return;
 
     setFlatTree((prev) => {
       const res = prev.map((node) => {
-        if (node.id === selectedNodeIdRef.current) {
+        if (node.id === selectedNodeId) {
           return {
             ...node,
             label: nodeEditContent,
@@ -274,10 +289,10 @@ function NoteDetail() {
   };
 
   const handleNodeAddConfirm = () => {
-    if (!selectedNodeIdRef.current) return;
+    if (!selectedNodeId) return;
 
     const pNode = flatTree.find(
-      (item) => item.id === selectedNodeIdRef.current,
+      (item) => item.id === selectedNodeId,
     ) as NodeData;
 
     const id = uuidv4();
@@ -317,11 +332,11 @@ function NoteDetail() {
   };
 
   const handleNodeDeleteConfirm = () => {
-    if (!selectedNodeIdRef.current) return;
+    if (!selectedNodeId) return;
 
     const nodeIdsToBeDeleted = [
-      selectedNodeIdRef.current,
-      ...findDescendantsByIdInFlatTree(flatTree, selectedNodeIdRef.current).map(
+      selectedNodeId,
+      ...findDescendantsByIdInFlatTree(flatTree, selectedNodeId).map(
         (item) => item.id,
       ),
     ];
@@ -589,9 +604,12 @@ function NoteDetail() {
         >
           <NoteTree flatTree={flatTree} />
         </svg>
-        <div className="fixed top-0 right-0 text-surface">
+        <div className="text-surface fixed top-0 right-0">
           {viewport.zoom !== 1 && (
-            <button onClick={resetZoom} className="cursor-pointer hover:text-primary transition-colors">
+            <button
+              onClick={resetZoom}
+              className="hover:text-primary cursor-pointer transition-colors"
+            >
               {viewport.zoom.toFixed(2)} reset zoom
             </button>
           )}
@@ -651,6 +669,7 @@ function NoteDetail() {
           onEdit={handleNodeEdit}
           onAddChild={handleNodeAddChild}
           onSetParent={handleNodeSetParent}
+          onToggleMark={handleNodeToggleMark}
           onDelete={handleNodeDelete}
           onClose={handleNodeMenuClose}
         />
@@ -677,7 +696,7 @@ function NoteDetail() {
                 // set parent node
                 setFlatTree((prev) =>
                   prev.map((item) => {
-                    if (item.id === selectedNodeIdRef.current) {
+                    if (item.id === selectedNodeId) {
                       const pNode = prev.find(
                         (item) => item.id === chosenParentNodeId,
                       ) as NodeData;

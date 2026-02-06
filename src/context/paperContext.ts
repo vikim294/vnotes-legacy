@@ -6,11 +6,12 @@ const PaperContext = createContext<{
   flatTree: NodeData[];
   editMode: boolean;
   viewportZoom: number;
-  selectedNodeIdRef: React.RefObject<number | string | null>;
+  selectedNodeId: number | string | null;
   nodeMenuRef: React.RefObject<NodeMenuExpose | null>;
   isChoosingParent: boolean;
   setFlatTree: React.Dispatch<React.SetStateAction<NodeData[]>>;
   setNodeMenuVisible: React.Dispatch<React.SetStateAction<boolean>>;
+  setSelectedNodeId: React.Dispatch<React.SetStateAction<number | string | null>>;
   setChosenParentNodeId: React.Dispatch<React.SetStateAction<number | string | null>>;
 } | null>(null);
 

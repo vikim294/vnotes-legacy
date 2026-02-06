@@ -16,6 +16,7 @@ interface NoteNodeProps {
   y: number;
   label: string;
   expanded?: boolean;
+  marked?: boolean;
 }
 
 const createNodeMenuEvent = (detail: {
@@ -29,13 +30,13 @@ const createNodeMenuEvent = (detail: {
   });
 };
 
-export default function NoteNode({ id, x, y, label, expanded }: NoteNodeProps) {
+export default function NoteNode({ id, x, y, label, expanded, marked }: NoteNodeProps) {
   // context
   const paperContext = use(PaperContext);
   const flatTree = paperContext?.flatTree;
   const editMode = paperContext?.editMode;
   const viewportZoom = paperContext?.viewportZoom;
-  const selectedNodeIdRef = paperContext?.selectedNodeIdRef;
+  const setSelectedNodeId = paperContext?.setSelectedNodeId;
   const nodeMenuRef = paperContext?.nodeMenuRef;
   const isChoosingParent = paperContext?.isChoosingParent;
   const setFlatTree = paperContext?.setFlatTree;
@@ -275,7 +276,7 @@ export default function NoteNode({ id, x, y, label, expanded }: NoteNodeProps) {
         e.target as SVGGElement
       ).getBoundingClientRect();
 
-      selectedNodeIdRef!.current = e.detail.nodeId;
+      setSelectedNodeId?.(e.detail.nodeId);
 
       nodeMenuRef?.current?.setPosition({
         x: left + width + 12,
@@ -289,7 +290,7 @@ export default function NoteNode({ id, x, y, label, expanded }: NoteNodeProps) {
     return () => {
       gElem?.removeEventListener("nodemenu", onNodeMenu as EventListener);
     };
-  }, [selectedNodeIdRef, nodeMenuRef, setNodeMenuVisible]);
+  }, [setSelectedNodeId, nodeMenuRef, setNodeMenuVisible]);
 
   useEffect(() => {
     return () => {
@@ -322,7 +323,7 @@ export default function NoteNode({ id, x, y, label, expanded }: NoteNodeProps) {
       onClick={handleClick}
       onDoubleClick={handleDoubleClick}
     >
-      <NodeLabel label={label} size={nodeLabelSize} setSize={setNodeLabelSize}></NodeLabel>
+      <NodeLabel label={label} marked={marked} size={nodeLabelSize} setSize={setNodeLabelSize}></NodeLabel>
 
       {hasChildren && (
         <text
@@ -347,10 +348,11 @@ const TEXT_HEIGHT = 20.5;
 
 interface NodeLabelProps {
   label: string;
+  marked?: boolean
   size: Size;
   setSize: React.Dispatch<React.SetStateAction<Size>>;
 }
-function NodeLabel({ label, size, setSize }: NodeLabelProps) {
+function NodeLabel({ label, marked, size, setSize }: NodeLabelProps) {
   const textList = label.split("\n");
   const textsRef = useRef<Map<number, SVGTextElement>>(new Map());
 
@@ -399,7 +401,7 @@ function NodeLabel({ label, size, setSize }: NodeLabelProps) {
           x={0}
           y={0}
           dy={index * TEXT_HEIGHT + ((textList.length - 1) * TEXT_HEIGHT) / -2}
-          fill="white"
+          fill={marked ? "var(--color-node-marked)" : "white"}
           textAnchor="middle"
           dominantBaseline="central"
           className="select-none"

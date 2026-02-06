@@ -11,6 +11,7 @@
   --color-secondary-active: #6b7280; /* Gray-500 */
   
   --color-node: #1b1a1eed;
+  --color-node-marked: #10b981; /* green */
   --color-surface: #111827; /* Gray-900 - deep background */
   --color-surface-light: #1f2937; /* Gray-800 - card backgrounds */
   --color-border: #374151; /* Gray-700 - borders */
