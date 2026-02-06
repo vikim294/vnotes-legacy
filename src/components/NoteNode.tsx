@@ -382,6 +382,7 @@ function NodeLabel({ label }: NodeLabelProps) {
 
       {textList.map((text, index) => (
         <text
+          key={index}
           ref={(node) => {
             if (node) {
               textsRef.current.set(index, node);
