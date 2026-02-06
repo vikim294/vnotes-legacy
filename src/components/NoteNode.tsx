@@ -8,6 +8,7 @@ import {
 } from "react";
 import PaperContext from "../context/paperContext";
 import { findDescendantsByIdInFlatTree } from "../lib";
+import type { Size } from "../types/note";
 
 interface NoteNodeProps {
   id: number | string;
@@ -67,6 +68,12 @@ export default function NoteNode({ id, x, y, label, expanded }: NoteNodeProps) {
 
   // used for double tap
   const firstTapRef = useRef(false);
+
+  // node label size
+  const [nodeLabelSize, setNodeLabelSize] = useState<Size>({
+    width: 0,
+    height: 0,
+  });
 
   const showOpenMenu = (e: React.MouseEvent<SVGGElement, MouseEvent>) => {
     e.preventDefault();
@@ -315,13 +322,13 @@ export default function NoteNode({ id, x, y, label, expanded }: NoteNodeProps) {
       onClick={handleClick}
       onDoubleClick={handleDoubleClick}
     >
-      <NodeLabel label={label}></NodeLabel>
+      <NodeLabel label={label} size={nodeLabelSize} setSize={setNodeLabelSize}></NodeLabel>
 
       {hasChildren && (
         <text
           className="select-none"
           x={0}
-          y={-24}
+          y={nodeLabelSize.height / -2 - 8}
           fill="white"
           textAnchor="middle"
           dominantBaseline="middle"
@@ -340,15 +347,12 @@ const TEXT_HEIGHT = 20.5;
 
 interface NodeLabelProps {
   label: string;
+  size: Size;
+  setSize: React.Dispatch<React.SetStateAction<Size>>;
 }
-function NodeLabel({ label }: NodeLabelProps) {
+function NodeLabel({ label, size, setSize }: NodeLabelProps) {
   const textList = label.split("\n");
   const textsRef = useRef<Map<number, SVGTextElement>>(new Map());
-
-  const [rectSize, setRectSize] = useState<{ width: number; height: number }>({
-    width: 0,
-    height: 0,
-  });
 
   useLayoutEffect(() => {
     if (textsRef.current) {
@@ -361,20 +365,20 @@ function NodeLabel({ label }: NodeLabelProps) {
         widthList.push(bbox.width);
       }
 
-      setRectSize({
+      setSize({
         width: Math.max(...widthList) + PADDING_X,
         height: textsRef.current.size * TEXT_HEIGHT + PADDING_Y,
       });
     }
-  }, [label]);
+  }, [label, setSize]);
 
   return (
     <>
       <rect
-        x={rectSize.width / -2}
-        y={rectSize.height / -2}
-        width={rectSize.width}
-        height={rectSize.height}
+        x={size.width / -2}
+        y={size.height / -2}
+        width={size.width}
+        height={size.height}
         fill="var(--color-node)"
         rx="6"
         ry="6"
