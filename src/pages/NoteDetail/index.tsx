@@ -477,7 +477,7 @@ function NoteDetail() {
 
         newD = getDistanceBetweenTwoPoints(p1, p2);
 
-        let newZoom = 0;
+        let newZoom = gestureData.viewportStartZoom;
 
         // startD: newD = startZoom: newZoom
         const ratio = newD / gestureData.startD;
@@ -485,6 +485,8 @@ function NoteDetail() {
           // zoom in or zoom out
           newZoom = (1 / ratio) * gestureData.viewportStartZoom;
         }
+
+        if(newZoom === 0) return
 
         // the position ratio of pointer in the paper
         const ratioX = gestureData.centerPointX / paperSize.width;
