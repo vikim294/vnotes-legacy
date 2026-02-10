@@ -416,8 +416,7 @@ function NoteDetail() {
     const gestureData = gestureInfo.current;
 
     const onPointerDown = (e: PointerEvent) => {
-      // return if it's not paper
-      if (e.target !== paperEl) return;
+      if (e.target !== paperEl && editMode) return;
       // return if it's not left click when clicking
       if (e.pointerType === "mouse" && e.button !== 0) return;
 

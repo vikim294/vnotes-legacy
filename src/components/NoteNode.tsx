@@ -179,7 +179,7 @@ export default function NoteNode({ id, x, y, label, expanded, marked }: NoteNode
   };
 
   const handleDoubleClick = () => {
-    if (!hasChildren) return;
+    if (!editMode || !hasChildren) return;
     const newExpanded = expanded === false ? true : false;
 
     setFlatTree?.((prev) => {
@@ -311,7 +311,7 @@ export default function NoteNode({ id, x, y, label, expanded, marked }: NoteNode
     // drag -> move node
     // long tap(right click) -> open menu
     <g
-      className={"cursor-pointer"}
+      className={editMode ? "cursor-pointer" : ''}
       key={id}
       transform={`translate(${x}, ${y})`}
       ref={gRef}
@@ -325,7 +325,7 @@ export default function NoteNode({ id, x, y, label, expanded, marked }: NoteNode
     >
       <NodeLabel label={label} marked={marked} size={nodeLabelSize} setSize={setNodeLabelSize}></NodeLabel>
 
-      {hasChildren && (
+      {editMode && hasChildren && (
         <text
           className="select-none"
           x={0}
