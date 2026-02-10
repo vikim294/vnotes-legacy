@@ -750,6 +750,7 @@ function NoteDetail() {
             <textarea
               className="bg-textarea w-full resize-none p-2 outline-none"
               rows={6}
+              maxLength={500}
               value={nodeEditContent}
               onChange={(e) => setNodeEditContent(e.target.value)}
             />
@@ -770,6 +771,7 @@ function NoteDetail() {
             <textarea
               className="bg-textarea w-full resize-none p-2 outline-none"
               rows={6}
+              maxLength={500}
               value={nodeEditContent}
               onChange={(e) => setNodeEditContent(e.target.value)}
             />
@@ -790,6 +792,7 @@ function NoteDetail() {
             <textarea
               className="bg-textarea w-full resize-none p-2 outline-none"
               rows={6}
+              maxLength={500}
               value={nodeEditContent}
               onChange={(e) => setNodeEditContent(e.target.value)}
             />
