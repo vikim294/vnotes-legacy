@@ -126,9 +126,11 @@ export default function NoteList() {
             <div className="text-foreground font-medium">{note.title}</div>
 
             <div className="flex gap-2">
-              <Button className="" type="primary">
-                <Link to={`/noteDetails/${note.id}`}>detail</Link>
-              </Button>
+              <Link to={`/noteDetails/${note.id}`}>
+                <Button className="" type="primary">
+                  detail
+                </Button>
+              </Link>
               <Button className="" onClick={() => handleEditNote(note)}>
                 edit
               </Button>
