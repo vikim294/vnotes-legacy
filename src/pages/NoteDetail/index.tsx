@@ -737,6 +737,7 @@ function NoteDetail() {
         {/* modals */}
         <>
           <NewNodeAddModal
+            width={800}
             header="添加新结点"
             footer={
               <div>
@@ -749,12 +750,14 @@ function NoteDetail() {
           >
             <textarea
               className="bg-textarea w-full resize-none p-2 outline-none"
+              rows={6}
               value={nodeEditContent}
               onChange={(e) => setNodeEditContent(e.target.value)}
             />
           </NewNodeAddModal>
 
           <NodeEditModal
+            width={800}
             header="编辑结点"
             footer={
               <div>
@@ -767,12 +770,14 @@ function NoteDetail() {
           >
             <textarea
               className="bg-textarea w-full resize-none p-2 outline-none"
+              rows={6}
               value={nodeEditContent}
               onChange={(e) => setNodeEditContent(e.target.value)}
             />
           </NodeEditModal>
 
           <NodeAddModal
+            width={800}
             header="添加子结点"
             footer={
               <div>
@@ -785,6 +790,7 @@ function NoteDetail() {
           >
             <textarea
               className="bg-textarea w-full resize-none p-2 outline-none"
+              rows={6}
               value={nodeEditContent}
               onChange={(e) => setNodeEditContent(e.target.value)}
             />

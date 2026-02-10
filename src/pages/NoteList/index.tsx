@@ -145,6 +145,7 @@ export default function NoteList() {
       {/* modals */}
       <>
         <AddModal
+          width={600}
           header="new note"
           footer={
             <div>
