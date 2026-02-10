@@ -16,7 +16,7 @@ export default function useModal() {
     return createPortal(
       <div
         className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50"
-        onPointerDown={closeModal}
+        // onPointerDown={closeModal}
       >
         <div
           className={`bg-surface-900 border border-surface-700 rounded-xl shadow-2xl max-w-full w-full`}
