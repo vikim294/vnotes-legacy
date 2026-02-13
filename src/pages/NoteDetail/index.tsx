@@ -4,6 +4,7 @@ import {
   findDescendantsByIdInFlatTree,
   // flattenTree,
   getDistanceBetweenTwoPoints,
+  handleTapEnter,
 } from "../../lib";
 import Button from "../../components/Button";
 import NodeMenu, { type NodeMenuExpose } from "../../components/NodeMenu";
@@ -753,6 +754,7 @@ function NoteDetail() {
               maxLength={500}
               value={nodeEditContent}
               onChange={(e) => setNodeEditContent(e.target.value)}
+              onKeyDown={handleTapEnter(handleNewNodeAddConfirm)}
             />
           </NewNodeAddModal>
 
@@ -774,6 +776,7 @@ function NoteDetail() {
               maxLength={500}
               value={nodeEditContent}
               onChange={(e) => setNodeEditContent(e.target.value)}
+              onKeyDown={handleTapEnter(handleNodeEditConfirm)}
             />
           </NodeEditModal>
 
@@ -795,6 +798,7 @@ function NoteDetail() {
               maxLength={500}
               value={nodeEditContent}
               onChange={(e) => setNodeEditContent(e.target.value)}
+              onKeyDown={handleTapEnter(handleNodeAddConfirm)}
             />
           </NodeAddModal>
 
