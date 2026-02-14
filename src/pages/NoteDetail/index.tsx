@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import {
   findDescendantsByIdInFlatTree,
@@ -75,7 +75,7 @@ function NoteDetail() {
     Modal: NewNodeAddModal,
     openModal: openNewNodeAddModal,
     closeModal: closeNewNodeAddModal,
-  } = useModal();
+  } = useModal({ onModalVisible: useCallback(() => newNodeAddModalInputRef.current?.focus(), []), });
   const newNodeAddModalInputRef = useRef<HTMLTextAreaElement>(null);
 
   // edit node
@@ -83,7 +83,7 @@ function NoteDetail() {
     Modal: NodeEditModal,
     openModal: openNodeEditModal,
     closeModal: closeNodeEditModal,
-  } = useModal();
+  } = useModal({ onModalVisible: useCallback(() => nodeEditModalInputRef.current?.focus(), []), }); // TODO: 为什么会 focus 到文本前面？
   const [nodeEditContent, setNodeEditContent] = useState("");
   const nodeEditModalInputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -92,7 +92,7 @@ function NoteDetail() {
     Modal: NodeAddModal,
     openModal: openNodeAddModal,
     closeModal: closeNodeAddModal,
-  } = useModal();
+  } = useModal({ onModalVisible: useCallback(() => nodeAddModalInputRef.current?.focus(), []), });
   const nodeAddModalInputRef = useRef<HTMLTextAreaElement>(null);
 
   // set parent node
@@ -750,7 +750,6 @@ function NoteDetail() {
                 </Button>
               </div>
             }
-            onModalVisible={() => newNodeAddModalInputRef.current?.focus()}
           >
             <textarea
               ref={newNodeAddModalInputRef}
@@ -774,7 +773,6 @@ function NoteDetail() {
                 </Button>
               </div>
             }
-            onModalVisible={() => nodeEditModalInputRef.current?.focus()}
           >
             <textarea
               ref={nodeEditModalInputRef}
@@ -798,7 +796,6 @@ function NoteDetail() {
                 </Button>
               </div>
             }
-            onModalVisible={() => nodeAddModalInputRef.current?.focus()}
           >
             <textarea
               ref={nodeAddModalInputRef}

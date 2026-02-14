@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Button from "../../components/Button";
 import type { NoteListItem } from "../../types/note";
 import useModal from "../../components/useModal";
@@ -15,7 +15,11 @@ export default function NoteList() {
     Modal: AddModal,
     openModal: openAddModal,
     closeModal: closeAddModal,
-  } = useModal();
+  } = useModal({
+    onModalVisible: useCallback(() => {
+      addModalInputRef.current?.focus();
+    }, []),
+  });
 
   const [newNoteTitle, setNewNoteTitle] = useState("");
   const addModalInputRef = useRef<HTMLInputElement>(null);
@@ -47,7 +51,10 @@ export default function NoteList() {
     Modal: EditModal,
     openModal: openEditModal,
     closeModal: closeEditModal,
-  } = useModal();
+  } = useModal({ onModalVisible: useCallback(() => {
+    editModalInputRef.current?.focus();
+  }, []),
+});
 
   const editModalInputRef = useRef<HTMLInputElement>(null);
 
@@ -162,7 +169,6 @@ export default function NoteList() {
               </Button>
             </div>
           }
-          onModalVisible={() => addModalInputRef.current?.focus()}
         >
           <label>
             Title:
@@ -187,7 +193,6 @@ export default function NoteList() {
               </Button>
             </div>
           }
-          onModalVisible={() => editModalInputRef.current?.focus()}
         >
           <label>
             new title:
