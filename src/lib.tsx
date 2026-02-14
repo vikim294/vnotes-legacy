@@ -95,7 +95,7 @@ export const getDistanceBetweenTwoPoints = (p1: Point, p2: Point) => {
 
 export const handleTapEnter = (cb: () => void) => {
   return (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    if(e.key === 'Enter') {
+    if(e.key === 'Enter' && !e.shiftKey) {
       cb()
     }
   }
