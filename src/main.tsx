@@ -9,7 +9,7 @@ createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <BrowserRouter>
       <Routes>
-        <Route path="/notes" element={<NoteList />}></Route>
+        <Route index element={<NoteList />}></Route>
         <Route path="/noteDetails/:id" element={<NoteDetail />}></Route>
       </Routes>
     </BrowserRouter>
