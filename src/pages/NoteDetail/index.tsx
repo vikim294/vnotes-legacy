@@ -76,6 +76,7 @@ function NoteDetail() {
     openModal: openNewNodeAddModal,
     closeModal: closeNewNodeAddModal,
   } = useModal();
+  const newNodeAddModalInputRef = useRef<HTMLTextAreaElement>(null);
 
   // edit node
   const {
@@ -84,6 +85,7 @@ function NoteDetail() {
     closeModal: closeNodeEditModal,
   } = useModal();
   const [nodeEditContent, setNodeEditContent] = useState("");
+  const nodeEditModalInputRef = useRef<HTMLTextAreaElement>(null);
 
   // add node
   const {
@@ -91,6 +93,7 @@ function NoteDetail() {
     openModal: openNodeAddModal,
     closeModal: closeNodeAddModal,
   } = useModal();
+  const nodeAddModalInputRef = useRef<HTMLTextAreaElement>(null);
 
   // set parent node
   const [isChoosingParent, setIsChoosingParent] = useState(false);
@@ -747,8 +750,10 @@ function NoteDetail() {
                 </Button>
               </div>
             }
+            onModalVisible={() => newNodeAddModalInputRef.current?.focus()}
           >
             <textarea
+              ref={newNodeAddModalInputRef}
               className="bg-textarea w-full resize-none p-2 outline-none"
               rows={6}
               maxLength={500}
@@ -769,8 +774,10 @@ function NoteDetail() {
                 </Button>
               </div>
             }
+            onModalVisible={() => nodeEditModalInputRef.current?.focus()}
           >
             <textarea
+              ref={nodeEditModalInputRef}
               className="bg-textarea w-full resize-none p-2 outline-none"
               rows={6}
               maxLength={500}
@@ -791,8 +798,10 @@ function NoteDetail() {
                 </Button>
               </div>
             }
+            onModalVisible={() => nodeAddModalInputRef.current?.focus()}
           >
             <textarea
+              ref={nodeAddModalInputRef}
               className="bg-textarea w-full resize-none p-2 outline-none"
               rows={6}
               maxLength={500}

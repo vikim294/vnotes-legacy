@@ -100,3 +100,5 @@ export const handleTapEnter = (cb: () => void) => {
     }
   }
 }
+
+export const noop = () => {};

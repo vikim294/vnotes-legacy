@@ -18,6 +18,7 @@ export default function NoteList() {
   } = useModal();
 
   const [newNoteTitle, setNewNoteTitle] = useState("");
+  const addModalInputRef = useRef<HTMLInputElement>(null);
 
   const openCreateNoteModal = () => {
     setNewNoteTitle("");
@@ -47,6 +48,8 @@ export default function NoteList() {
     openModal: openEditModal,
     closeModal: closeEditModal,
   } = useModal();
+
+  const editModalInputRef = useRef<HTMLInputElement>(null);
 
   const handleEditNote = (note: NoteListItem) => {
     currentNoteRef.current = note;
@@ -123,7 +126,10 @@ export default function NoteList() {
 
       <div className="mt-4 space-y-3">
         {notes.map((note) => (
-          <div key={note.id} className="flex items-center justify-between p-3 rounded-lg bg-surface/50 backdrop-blur-sm border border-border/30">
+          <div
+            key={note.id}
+            className="bg-surface/50 border-border/30 flex items-center justify-between rounded-lg border p-3 backdrop-blur-sm"
+          >
             <div className="text-foreground font-medium">{note.title}</div>
 
             <div className="flex gap-2">
@@ -156,11 +162,12 @@ export default function NoteList() {
               </Button>
             </div>
           }
+          onModalVisible={() => addModalInputRef.current?.focus()}
         >
           <label>
             Title:
-            {/* TODO: focus when open */}
             <input
+              ref={addModalInputRef}
               type="text"
               className="bg-textarea w-full p-2 outline-none"
               value={newNoteTitle}
@@ -180,10 +187,12 @@ export default function NoteList() {
               </Button>
             </div>
           }
+          onModalVisible={() => editModalInputRef.current?.focus()}
         >
           <label>
             new title:
             <input
+              ref={editModalInputRef}
               type="text"
               className="bg-textarea w-full p-2 outline-none"
               value={newNoteTitle}

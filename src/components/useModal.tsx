@@ -1,39 +1,56 @@
 import { createPortal } from "react-dom";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { noop } from "../lib";
 
 interface ModalProps {
   width?: number;
   header?: React.ReactNode;
   children?: React.ReactNode;
   footer?: React.ReactNode;
-  closeOnClickMask?: boolean
+  closeOnClickMask?: boolean;
+  onModalVisible?: typeof noop;
 }
 
 export default function useModal() {
   const [visible, setVisible] = useState(false);
 
-  const Modal = ({ width, header, children, footer, closeOnClickMask = false }: ModalProps = {}) => {
-    if (!visible) return null;
+  const openModal = useCallback(() => setVisible(true), []);
+  const closeModal = useCallback(() => setVisible(false), []);
+
+  const Modal = ({
+    width,
+    header,
+    children,
+    footer,
+    closeOnClickMask,
+    onModalVisible,
+  }: ModalProps) => {
+    useEffect(() => {
+      if(visible) {
+        onModalVisible?.()
+      }
+    }, [onModalVisible]);
+
+    if (!visible) return;
+
     return createPortal(
       <div
-        className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50"
-        onPointerDown={closeOnClickMask ? closeModal : () => {}}
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
+        onPointerDown={closeOnClickMask ? closeModal : undefined}
       >
         <div
-          className={`bg-surface-900 border border-surface-700 rounded-xl shadow-2xl max-w-full w-full`}
+          className={`bg-surface-900 border-surface-700 w-full max-w-full rounded-xl border shadow-2xl`}
           style={{ width: width ?? 400 }}
           onPointerDown={(e) => e.stopPropagation()}
         >
           {header && (
-            <div className="px-6 py-4 border-b border-surface-700">
+            <div className="border-surface-700 border-b px-6 py-4">
               <h3 className="text-lg font-semibold text-slate-100">{header}</h3>
             </div>
           )}
-          <div className="px-6 py-4 text-slate-200">
-            {children}
-          </div>
+          <div className="px-6 py-4 text-slate-200">{children}</div>
           {footer && (
-            <div className="px-6 py-4 bg-surface-800/50 rounded-b-xl flex justify-end gap-2">
+            <div className="bg-surface-800/50 flex justify-end gap-2 rounded-b-xl px-6 py-4">
               {footer}
             </div>
           )}
@@ -42,9 +59,6 @@ export default function useModal() {
       document.body,
     );
   };
-
-  const openModal = useCallback(() => setVisible(true), []);
-  const closeModal = useCallback(() => setVisible(false), []);
 
   return {
     Modal,
