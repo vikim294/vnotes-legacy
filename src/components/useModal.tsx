@@ -6,17 +6,18 @@ interface ModalProps {
   header?: React.ReactNode;
   children?: React.ReactNode;
   footer?: React.ReactNode;
+  closeOnClickMask?: boolean
 }
 
 export default function useModal() {
   const [visible, setVisible] = useState(false);
 
-  const Modal = ({ width, header, children, footer }: ModalProps = {}) => {
+  const Modal = ({ width, header, children, footer, closeOnClickMask = false }: ModalProps = {}) => {
     if (!visible) return null;
     return createPortal(
       <div
         className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50"
-        // onPointerDown={closeModal}
+        onPointerDown={closeOnClickMask ? closeModal : () => {}}
       >
         <div
           className={`bg-surface-900 border border-surface-700 rounded-xl shadow-2xl max-w-full w-full`}
