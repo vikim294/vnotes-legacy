@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { v4 as uuidv4 } from "uuid";
 import {
   findDescendantsByIdInFlatTree,
@@ -35,6 +42,8 @@ function NoteDetail() {
   // console.log(JSON.stringify(flatTree))
   // const [flatTree, setFlatTree] = useState(flattenedTree);
   const [flatTree, setFlatTree] = useState<NodeData[]>([]);
+
+  const hasMountedRef = useRef(false);
 
   const [paperSize, setPaperSize] = useState({ width: 0, height: 0 });
   const [viewport, setViewport] = useState({
@@ -75,7 +84,12 @@ function NoteDetail() {
     Modal: NewNodeAddModal,
     openModal: openNewNodeAddModal,
     closeModal: closeNewNodeAddModal,
-  } = useModal({ onModalVisible: useCallback(() => newNodeAddModalInputRef.current?.focus(), []) });
+  } = useModal({
+    onModalVisible: useCallback(
+      () => newNodeAddModalInputRef.current?.focus(),
+      [],
+    ),
+  });
   const newNodeAddModalInputRef = useRef<HTMLTextAreaElement>(null);
 
   // edit node
@@ -83,12 +97,14 @@ function NoteDetail() {
     Modal: NodeEditModal,
     openModal: openNodeEditModal,
     closeModal: closeNodeEditModal,
-  } = useModal({ onModalVisible: useCallback(() => {
-    nodeEditModalInputRef.current?.focus()
-    // ⚠️ textarea 会把光标移动到文本前面，这里把光标移动到文本后面
-    const len = nodeEditModalInputRef.current?.value.length ?? 0
-    nodeEditModalInputRef.current?.setSelectionRange(len, len)
-  }, []) });
+  } = useModal({
+    onModalVisible: useCallback(() => {
+      nodeEditModalInputRef.current?.focus();
+      // ⚠️ textarea 会把光标移动到文本前面，这里把光标移动到文本后面
+      const len = nodeEditModalInputRef.current?.value.length ?? 0;
+      nodeEditModalInputRef.current?.setSelectionRange(len, len);
+    }, []),
+  });
   const [nodeEditContent, setNodeEditContent] = useState("");
   const nodeEditModalInputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -97,7 +113,12 @@ function NoteDetail() {
     Modal: NodeAddModal,
     openModal: openNodeAddModal,
     closeModal: closeNodeAddModal,
-  } = useModal({ onModalVisible: useCallback(() => nodeAddModalInputRef.current?.focus(), []) });
+  } = useModal({
+    onModalVisible: useCallback(
+      () => nodeAddModalInputRef.current?.focus(),
+      [],
+    ),
+  });
   const nodeAddModalInputRef = useRef<HTMLTextAreaElement>(null);
 
   // set parent node
@@ -494,7 +515,7 @@ function NoteDetail() {
           newZoom = (1 / ratio) * gestureData.viewportStartZoom;
         }
 
-        if(newZoom === 0) return
+        if (newZoom === 0) return;
 
         // the position ratio of pointer in the paper
         const ratioX = gestureData.centerPointX / paperSize.width;
@@ -598,7 +619,26 @@ function NoteDetail() {
       // fetch note detail
       getNoteDetail();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [noteId]);
+
+  useEffect(() => {
+    if (hasMountedRef.current) return;
+
+    if (flatTree.length > 0 && viewport.width > 0 && viewport.height > 0) {
+      hasMountedRef.current = true;
+
+      const firstRootNode = flatTree.find(
+        (node) => node.pid === null,
+      ) as NodeData;
+
+      setViewport((prev) => ({
+        ...prev,
+        x: firstRootNode.x - viewport.width / 2,
+        y: firstRootNode.y - viewport.height / 2,
+      }));
+    }
+  }, [flatTree, viewport.width, viewport.height]);
 
   return (
     <PaperContext value={paperContext}>
