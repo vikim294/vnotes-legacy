@@ -75,7 +75,7 @@ function NoteDetail() {
     Modal: NewNodeAddModal,
     openModal: openNewNodeAddModal,
     closeModal: closeNewNodeAddModal,
-  } = useModal({ onModalVisible: useCallback(() => newNodeAddModalInputRef.current?.focus(), []), });
+  } = useModal({ onModalVisible: useCallback(() => newNodeAddModalInputRef.current?.focus(), []) });
   const newNodeAddModalInputRef = useRef<HTMLTextAreaElement>(null);
 
   // edit node
@@ -83,7 +83,12 @@ function NoteDetail() {
     Modal: NodeEditModal,
     openModal: openNodeEditModal,
     closeModal: closeNodeEditModal,
-  } = useModal({ onModalVisible: useCallback(() => nodeEditModalInputRef.current?.focus(), []), }); // TODO: 为什么会 focus 到文本前面？
+  } = useModal({ onModalVisible: useCallback(() => {
+    nodeEditModalInputRef.current?.focus()
+    // ⚠️ textarea 会把光标移动到文本前面，这里把光标移动到文本后面
+    const len = nodeEditModalInputRef.current?.value.length ?? 0
+    nodeEditModalInputRef.current?.setSelectionRange(len, len)
+  }, []) });
   const [nodeEditContent, setNodeEditContent] = useState("");
   const nodeEditModalInputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -92,7 +97,7 @@ function NoteDetail() {
     Modal: NodeAddModal,
     openModal: openNodeAddModal,
     closeModal: closeNodeAddModal,
-  } = useModal({ onModalVisible: useCallback(() => nodeAddModalInputRef.current?.focus(), []), });
+  } = useModal({ onModalVisible: useCallback(() => nodeAddModalInputRef.current?.focus(), []) });
   const nodeAddModalInputRef = useRef<HTMLTextAreaElement>(null);
 
   // set parent node
