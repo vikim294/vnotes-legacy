@@ -215,10 +215,34 @@ function NoteDetail() {
     });
     const res = await response.json();
     if (res.code === 0) {
-      setEditMode(false);
+      // 根据返回结果，更新 flatTree
+      const newFlatTree = [];
 
-      // 获取最新数据
-      getNoteDetail();
+      // added -> update id, pid
+      // updated -> update pid
+      // deleted -> remove from flatTree
+
+      for (const item of flatTree) {
+        if (deletedNodeIds.includes(item.id)) {
+          continue;
+        } else {
+          // reset nodeType
+          const newItem: NodeData = { ...item, nodeType: undefined };
+
+          if (res.data.uuidToId[item.id]) {
+            newItem.id = res.data.uuidToId[item.id];
+          }
+
+          if (item.pid && res.data.uuidToId[item.pid]) {
+            newItem.pid = res.data.uuidToId[item.pid];
+          }
+
+          newFlatTree.push(newItem);
+        }
+      }
+
+      setFlatTree(newFlatTree);
+      setEditMode(false);
     }
   };
 
