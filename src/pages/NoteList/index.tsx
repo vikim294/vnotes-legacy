@@ -4,7 +4,6 @@ import type { NoteListItem } from "../../types/note";
 import useModal from "../../components/useModal";
 import { API_BASE_URL } from "../../api";
 import { Link } from "react-router";
-import { handleTapEnter } from "../../lib";
 
 export default function NoteList() {
   const [notes, setNotes] = useState<NoteListItem[]>([]);
@@ -178,7 +177,6 @@ export default function NoteList() {
               className="bg-textarea w-full p-2 outline-none"
               value={newNoteTitle}
               onChange={(e) => setNewNoteTitle(e.target.value)}
-              onKeyDown={handleTapEnter(confirmCreateNote)}
             />
           </label>
         </AddModal>
@@ -202,7 +200,6 @@ export default function NoteList() {
               className="bg-textarea w-full p-2 outline-none"
               value={newNoteTitle}
               onChange={(e) => setNewNoteTitle(e.target.value)}
-              onKeyDown={handleTapEnter(confirmEditNote)}
             />
           </label>
         </EditModal>
