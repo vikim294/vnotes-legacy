@@ -30,7 +30,14 @@ const createNodeMenuEvent = (detail: {
   });
 };
 
-export default function NoteNode({ id, x, y, label, expanded, marked }: NoteNodeProps) {
+export default function NoteNode({
+  id,
+  x,
+  y,
+  label,
+  expanded,
+  marked,
+}: NoteNodeProps) {
   // context
   const paperContext = use(PaperContext);
   const flatTree = paperContext?.flatTree;
@@ -89,6 +96,11 @@ export default function NoteNode({ id, x, y, label, expanded, marked }: NoteNode
   };
 
   const handlePointerDown = (e: React.PointerEvent<SVGGElement>) => {
+    if (isChoosingParent) {
+      setChosenParentNodeId?.(id);
+      return
+    }
+
     if (e.pointerType === "mouse") return;
 
     if (firstTapRef.current === false) {
@@ -169,12 +181,6 @@ export default function NoteNode({ id, x, y, label, expanded, marked }: NoteNode
     if (tapInfoRef.current.timerForLongTap) {
       clearTimeout(tapInfoRef.current.timerForLongTap);
       tapInfoRef.current.timerForLongTap = null;
-    }
-  };
-
-  const handleClick = () => {
-    if (isChoosingParent) {
-      setChosenParentNodeId?.(id);
     }
   };
 
@@ -311,7 +317,7 @@ export default function NoteNode({ id, x, y, label, expanded, marked }: NoteNode
     // drag -> move node
     // long tap(right click) -> open menu
     <g
-      className={editMode ? "cursor-pointer" : ''}
+      className={editMode ? "cursor-pointer" : ""}
       key={id}
       transform={`translate(${x}, ${y})`}
       ref={gRef}
@@ -320,10 +326,14 @@ export default function NoteNode({ id, x, y, label, expanded, marked }: NoteNode
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerCancel}
-      onClick={handleClick}
       onDoubleClick={handleDoubleClick}
     >
-      <NodeLabel label={label} marked={marked} size={nodeLabelSize} setSize={setNodeLabelSize}></NodeLabel>
+      <NodeLabel
+        label={label}
+        marked={marked}
+        size={nodeLabelSize}
+        setSize={setNodeLabelSize}
+      ></NodeLabel>
 
       {editMode && hasChildren && (
         <text
@@ -348,7 +358,7 @@ const TEXT_HEIGHT = 20.5;
 
 interface NodeLabelProps {
   label: string;
-  marked?: boolean
+  marked?: boolean;
   size: Size;
   setSize: React.Dispatch<React.SetStateAction<Size>>;
 }

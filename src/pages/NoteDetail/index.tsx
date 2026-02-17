@@ -688,52 +688,54 @@ function NoteDetail() {
           )}
         </div>
 
-        <div className="fixed top-25 right-0">
-          {/* expand/collapse all button */}
-          <div>
-            <Button
-              onClick={() => {
-                const newValue = !isAllExpanded;
+        {!isChoosingParent && chosenParentNodeId === null && (
+          <div className="fixed top-25 right-0">
+            {/* expand/collapse all button */}
+            <div>
+              <Button
+                onClick={() => {
+                  const newValue = !isAllExpanded;
 
-                setFlatTree((prev) =>
-                  prev.map((item) => ({
-                    ...item,
-                    expanded: newValue ? true : false,
-                  })),
-                );
+                  setFlatTree((prev) =>
+                    prev.map((item) => ({
+                      ...item,
+                      expanded: newValue ? true : false,
+                    })),
+                  );
 
-                setIsAllExpand(newValue);
-              }}
-            >
-              {isAllExpanded ? "collapseAll" : "expandAll"}
-            </Button>
+                  setIsAllExpand(newValue);
+                }}
+              >
+                {isAllExpanded ? "collapseAll" : "expandAll"}
+              </Button>
+            </div>
+
+            {/* edit mode */}
+            {!editMode && (
+              <Button type="primary" onClick={() => setEditMode(true)}>
+                edit mode
+              </Button>
+            )}
+
+            {editMode && (
+              <>
+                <div>
+                  <Button type="secondary" onClick={handleAddNewNode}>
+                    add new node
+                  </Button>
+                </div>
+                <div>
+                  <Button type="primary" onClick={handleSaveEdit}>
+                    save
+                  </Button>
+                </div>
+                <div>
+                  <Button onClick={handleExitEdit}>exit</Button>
+                </div>
+              </>
+            )}
           </div>
-
-          {/* edit mode */}
-          {!editMode && (
-            <Button type="primary" onClick={() => setEditMode(true)}>
-              edit mode
-            </Button>
-          )}
-
-          {editMode && (
-            <>
-              <div>
-                <Button type="secondary" onClick={handleAddNewNode}>
-                  add new node
-                </Button>
-              </div>
-              <div>
-                <Button type="primary" onClick={handleSaveEdit}>
-                  save
-                </Button>
-              </div>
-              <div>
-                <Button onClick={handleExitEdit}>exit</Button>
-              </div>
-            </>
-          )}
-        </div>
+        )}
 
         {/* node menu */}
         <NodeMenu
