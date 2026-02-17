@@ -20,6 +20,7 @@ interface NodeMenuProps {
   onEdit: () => void;
   onAddChild: () => void;
   onSetParent: () => void;
+  onDisconnectFromParent: () => void;
   onToggleMark: () => void;
   onDelete: () => void;
   onClose: () => void;
@@ -31,6 +32,7 @@ export default function NodeMenu({
   onEdit,
   onAddChild,
   onSetParent,
+  onDisconnectFromParent,
   onToggleMark,
   onDelete,
   onClose,
@@ -75,6 +77,9 @@ export default function NodeMenu({
         </Button>
         <Button className="block w-full" onClick={onSetParent}>
           set parent node
+        </Button>
+        <Button className="block w-full" onClick={onDisconnectFromParent}>
+          disconnect from parent
         </Button>
         <Button className="block w-full" onClick={onToggleMark}>
           {selectedNode?.marked ? "unmark" : "mark"}

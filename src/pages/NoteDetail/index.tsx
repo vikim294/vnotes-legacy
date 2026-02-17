@@ -277,6 +277,24 @@ function NoteDetail() {
     setIsChoosingParent(true);
   };
 
+  const handleNodeDisconnectFromParent = () => {
+    if (!selectedNodeId) return;
+
+    setFlatTree((prev) => {
+      return prev.map((node) => {
+        if (node.id === selectedNodeId) {
+          return {
+            ...node,
+            pid: null,
+            puuid: null,
+            nodeType: node.nodeType === "new" ? "new" : "edited",
+          };
+        }
+        return node;
+      });
+    });
+  };
+
   const handleNodeToggleMark = () => {
     if (!selectedNodeId) return;
 
@@ -744,6 +762,7 @@ function NoteDetail() {
           onEdit={handleNodeEdit}
           onAddChild={handleNodeAddChild}
           onSetParent={handleNodeSetParent}
+          onDisconnectFromParent={handleNodeDisconnectFromParent}
           onToggleMark={handleNodeToggleMark}
           onDelete={handleNodeDelete}
           onClose={handleNodeMenuClose}
