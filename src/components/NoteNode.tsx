@@ -408,13 +408,15 @@ function NodeLabel({ label, marked, size, setSize }: NodeLabelProps) {
               textsRef.current.delete(index);
             };
           }}
-          x={0}
+          x={size.width / -2 + PADDING_X / 2}
           y={0}
           dy={index * TEXT_HEIGHT + ((textList.length - 1) * TEXT_HEIGHT) / -2}
           fill={marked ? "var(--color-node-marked)" : "white"}
-          textAnchor="middle"
           dominantBaseline="central"
+          style={{ fontFamily: "monospace" }}
           className="select-none"
+          // 给 <text> 元素添加 xml:space="preserve" 属性，可以保留原始空格和换行（类似于 HTML 中的 <pre> 标签）
+          xmlSpace="preserve"
         >
           {text}
         </text>
