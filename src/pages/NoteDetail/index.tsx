@@ -713,7 +713,7 @@ function NoteDetail() {
           )}
         </div>
 
-        {!isChoosingParent && chosenParentNodeId === null && (
+        {!isChoosingParent && chosenParentNodeId === null && isAuthorized && (
           <div className="fixed top-25 right-0">
             {/* expand/collapse all button */}
             <div>
@@ -735,8 +735,8 @@ function NoteDetail() {
               </Button>
             </div>
 
-            {/* edit mode - only show if authorized */}
-            {!editMode && isAuthorized && (
+            {/* edit mode */}
+            {!editMode && (
               <Button type="primary" onClick={() => setEditMode(true)}>
                 edit mode
               </Button>
