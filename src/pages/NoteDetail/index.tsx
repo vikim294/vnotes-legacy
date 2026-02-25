@@ -156,15 +156,10 @@ function NoteDetail() {
 
   // Authorization check function
   const isAuthorized = useMemo(() => {
-    // Check if noteId is one of the exempted IDs (49 or 22)
-    if (noteId === "49" || noteId === "22") {
-      return true;
-    }
-
     // Check if user has valid auth key
     const authKey = localStorage.getItem("vnote");
     return authKey === "294";
-  }, [noteId]);
+  }, []);
 
   const handleAddNewNode = () => {
     setNodeEditContent("");
