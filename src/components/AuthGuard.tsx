@@ -13,7 +13,7 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
     const authKey = localStorage.getItem("vnote");
 
     if (
-      location.pathname === "/noteDetails/7" ||
+      location.pathname === "/noteDetails/49" ||
       location.pathname === "/noteDetails/22"
     ) {
       return;
@@ -27,7 +27,7 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
   const authKey = localStorage.getItem("vnote");
 
   if (
-    location.pathname === "/noteDetails/7" ||
+    location.pathname === "/noteDetails/49" ||
     location.pathname === "/noteDetails/22"
   ) {
     return <>{children}</>;
