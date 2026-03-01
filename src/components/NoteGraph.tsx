@@ -70,7 +70,7 @@ const NoteGraph = memo<NoteGraphProps>(
       viewportStartZoom: 1,
     });
 
-    const [isAllExpanded, setIsAllExpand] = useState(true);
+    // const [isAllExpanded, setIsAllExpand] = useState(true);
 
     // edit mode
     const [editMode, setEditMode] = useState(false);
@@ -217,7 +217,7 @@ const NoteGraph = memo<NoteGraphProps>(
         }
       }
 
-      const params = {
+      const params: any = {
         added,
         updated,
         deletedNodeIds,

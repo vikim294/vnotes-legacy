@@ -2,7 +2,7 @@ import {
   use,
   useEffect,
   useLayoutEffect,
-  useMemo,
+  // useMemo,
   useRef,
   useState,
 } from "react";
@@ -37,7 +37,7 @@ export default function NoteNode({
   x,
   y,
   label,
-  expanded,
+  // expanded,
   marked,
   isDetail,
 }: NoteNodeProps) {
@@ -76,9 +76,9 @@ export default function NoteNode({
   });
 
   const descendantIdsRef = useRef<(number | string)[]>([]);
-  const hasChildren = useMemo(() => {
-    return flatTree?.some((item) => item.pid === id);
-  }, [flatTree, id]);
+  // const hasChildren = useMemo(() => {
+  //   return flatTree?.some((item) => item.pid === id);
+  // }, [flatTree, id]);
 
   // used for double tap
   const firstTapRef = useRef(false);
