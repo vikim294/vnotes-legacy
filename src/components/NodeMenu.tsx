@@ -38,6 +38,7 @@ export default function NodeMenu({
   onClose,
 }: NodeMenuProps) {
   const paperContext = use(PaperContext);
+  const graphType = paperContext?.graphType;
   const flatTree = paperContext?.flatTree;
   const selectedNodeId = paperContext?.selectedNodeId;
   const selectedNode = useMemo(() => {
@@ -81,9 +82,11 @@ export default function NodeMenu({
         <Button className="block w-full" onClick={onDisconnectFromParent}>
           disconnect from parent
         </Button>
-        <Button className="block w-full" onClick={onToggleMark}>
-          {selectedNode?.marked ? "unmark" : "mark"}
-        </Button>
+        {graphType === "detail" && (
+          <Button className="block w-full" onClick={onToggleMark}>
+            {selectedNode?.marked ? "unmark" : "mark"}
+          </Button>
+        )}
         <Button type="danger" className="block w-full" onClick={onDelete}>
           delete
         </Button>

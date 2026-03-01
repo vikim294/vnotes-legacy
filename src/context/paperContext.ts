@@ -3,6 +3,8 @@ import type { NodeMenuExpose } from "../components/NodeMenu";
 import type { NodeData } from "../types";
 
 const PaperContext = createContext<{
+  graphType: "directory" | "detail";
+  browseMode: boolean;
   flatTree: NodeData[];
   editMode: boolean;
   viewportZoom: number;

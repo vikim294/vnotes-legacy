@@ -9,6 +9,7 @@ import {
 import PaperContext from "../context/paperContext";
 import { findDescendantsByIdInFlatTree } from "../lib";
 import type { Size } from "../types/note";
+import { useNavigate } from "react-router";
 
 interface NoteNodeProps {
   id: number | string;
@@ -17,6 +18,7 @@ interface NoteNodeProps {
   label: string;
   expanded?: boolean;
   marked?: boolean;
+  isDetail?: boolean;
 }
 
 const createNodeMenuEvent = (detail: {
@@ -37,9 +39,13 @@ export default function NoteNode({
   label,
   expanded,
   marked,
+  isDetail,
 }: NoteNodeProps) {
+  const navigate = useNavigate()
+
   // context
   const paperContext = use(PaperContext);
+  const browseMode = paperContext?.browseMode;
   const flatTree = paperContext?.flatTree;
   const editMode = paperContext?.editMode;
   const viewportZoom = paperContext?.viewportZoom;
@@ -98,7 +104,7 @@ export default function NoteNode({
   const handlePointerDown = (e: React.PointerEvent<SVGGElement>) => {
     if (isChoosingParent) {
       setChosenParentNodeId?.(id);
-      return
+      return;
     }
 
     if (e.pointerType === "mouse") return;
@@ -185,20 +191,27 @@ export default function NoteNode({
   };
 
   const handleDoubleClick = () => {
-    if (!editMode || !hasChildren) return;
-    const newExpanded = expanded === false ? true : false;
+    
+    if(!browseMode) {
+      if(isDetail) {
+        navigate(`/noteDetails/${id}`)
+      }
+    }
 
-    setFlatTree?.((prev) => {
-      return prev.map((item) => {
-        if (item.id === id) {
-          return {
-            ...item,
-            expanded: newExpanded || newExpanded === undefined,
-          };
-        }
-        return item;
-      });
-    });
+    // if (!editMode || !hasChildren) return;
+    // const newExpanded = expanded === false ? true : false;
+
+    // setFlatTree?.((prev) => {
+    //   return prev.map((item) => {
+    //     if (item.id === id) {
+    //       return {
+    //         ...item,
+    //         expanded: newExpanded || newExpanded === undefined,
+    //       };
+    //     }
+    //     return item;
+    //   });
+    // });
   };
 
   // drag node
@@ -331,11 +344,13 @@ export default function NoteNode({
       <NodeLabel
         label={label}
         marked={marked}
+        isDetail={isDetail}
         size={nodeLabelSize}
         setSize={setNodeLabelSize}
       ></NodeLabel>
 
-      {editMode && hasChildren && (
+      {/* expand icon */}
+      {/* {editMode && hasChildren && (
         <text
           className="select-none"
           x={0}
@@ -347,7 +362,7 @@ export default function NoteNode({
         >
           {expanded === false ? "+" : "-"}
         </text>
-      )}
+      )} */}
     </g>
   );
 }
@@ -359,12 +374,16 @@ const TEXT_HEIGHT = 20.5;
 interface NodeLabelProps {
   label: string;
   marked?: boolean;
+  isDetail?: boolean;
   size: Size;
   setSize: React.Dispatch<React.SetStateAction<Size>>;
 }
-function NodeLabel({ label, marked, size, setSize }: NodeLabelProps) {
+function NodeLabel({ label, marked, isDetail, size, setSize }: NodeLabelProps) {
   const textList = label.split("\n");
   const textsRef = useRef<Map<number, SVGTextElement>>(new Map());
+
+  const paperContext = use(PaperContext);
+  const browseMode = paperContext?.browseMode;
 
   useLayoutEffect(() => {
     if (textsRef.current) {
@@ -391,7 +410,7 @@ function NodeLabel({ label, marked, size, setSize }: NodeLabelProps) {
         y={size.height / -2}
         width={size.width}
         height={size.height}
-        fill="var(--color-node)"
+        fill={isDetail ? "var(--color-node-detail)" : "var(--color-node)"}
         rx="6"
         ry="6"
       />
@@ -414,7 +433,7 @@ function NodeLabel({ label, marked, size, setSize }: NodeLabelProps) {
           fill={marked ? "var(--color-node-marked)" : "white"}
           dominantBaseline="central"
           style={{ fontFamily: "monospace" }}
-          className="select-none"
+          className={browseMode ? "select-none" : ""}
           // 给 <text> 元素添加 xml:space="preserve" 属性，可以保留原始空格和换行（类似于 HTML 中的 <pre> 标签）
           xmlSpace="preserve"
         >
