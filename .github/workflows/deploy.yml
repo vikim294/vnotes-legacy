@@ -32,4 +32,7 @@ jobs:
           SOURCE: "dist/"
           TARGET: "/www/wwwroot/vnotes-c"
           # ← 添加排除文件
-          ARGS: "-avzr --delete --exclude .user.ini --exclude .DS_Store"
+          AARGS: |
+            -avzr --delete 
+            --exclude .user.ini
+            --exclude .DS_Store
