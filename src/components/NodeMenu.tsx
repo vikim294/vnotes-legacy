@@ -73,9 +73,14 @@ export default function NodeMenu({
         <Button className="block w-full" onClick={onEdit}>
           edit content
         </Button>
-        <Button type="secondary" className="block w-full" onClick={onAddChild}>
-          add child node
-        </Button>
+        {
+          !selectedNode?.isDetail && (
+            // 非 detail 节点才能新增子结点
+            <Button className="block w-full" onClick={onAddChild}>
+              add child node
+            </Button>
+          )
+        }
         <Button className="block w-full" onClick={onSetParent}>
           set parent node
         </Button>
