@@ -6,6 +6,8 @@ export interface NodeData {
   label: string;
   x: number;
   y: number;
+  marked?: boolean;
+  isDetail?: boolean;
 
   children?: NodeData[];
   expanded?: boolean;

@@ -2,12 +2,14 @@ import {
   use,
   useEffect,
   useLayoutEffect,
-  useMemo,
+  // useMemo,
   useRef,
   useState,
 } from "react";
 import PaperContext from "../context/paperContext";
 import { findDescendantsByIdInFlatTree } from "../lib";
+import type { Size } from "../types/note";
+import { useNavigate } from "react-router";
 
 interface NoteNodeProps {
   id: number | string;
@@ -15,6 +17,8 @@ interface NoteNodeProps {
   y: number;
   label: string;
   expanded?: boolean;
+  marked?: boolean;
+  isDetail?: boolean;
 }
 
 const createNodeMenuEvent = (detail: {
@@ -28,13 +32,24 @@ const createNodeMenuEvent = (detail: {
   });
 };
 
-export default function NoteNode({ id, x, y, label, expanded }: NoteNodeProps) {
+export default function NoteNode({
+  id,
+  x,
+  y,
+  label,
+  // expanded,
+  marked,
+  isDetail,
+}: NoteNodeProps) {
+  const navigate = useNavigate()
+
   // context
   const paperContext = use(PaperContext);
+  const browseMode = paperContext?.browseMode;
   const flatTree = paperContext?.flatTree;
   const editMode = paperContext?.editMode;
   const viewportZoom = paperContext?.viewportZoom;
-  const selectedNodeIdRef = paperContext?.selectedNodeIdRef;
+  const setSelectedNodeId = paperContext?.setSelectedNodeId;
   const nodeMenuRef = paperContext?.nodeMenuRef;
   const isChoosingParent = paperContext?.isChoosingParent;
   const setFlatTree = paperContext?.setFlatTree;
@@ -61,12 +76,18 @@ export default function NoteNode({ id, x, y, label, expanded }: NoteNodeProps) {
   });
 
   const descendantIdsRef = useRef<(number | string)[]>([]);
-  const hasChildren = useMemo(() => {
-    return flatTree?.some((item) => item.pid === id);
-  }, [flatTree, id]);
+  // const hasChildren = useMemo(() => {
+  //   return flatTree?.some((item) => item.pid === id);
+  // }, [flatTree, id]);
 
   // used for double tap
   const firstTapRef = useRef(false);
+
+  // node label size
+  const [nodeLabelSize, setNodeLabelSize] = useState<Size>({
+    width: 0,
+    height: 0,
+  });
 
   const showOpenMenu = (e: React.MouseEvent<SVGGElement, MouseEvent>) => {
     e.preventDefault();
@@ -81,6 +102,11 @@ export default function NoteNode({ id, x, y, label, expanded }: NoteNodeProps) {
   };
 
   const handlePointerDown = (e: React.PointerEvent<SVGGElement>) => {
+    if (isChoosingParent) {
+      setChosenParentNodeId?.(id);
+      return;
+    }
+
     if (e.pointerType === "mouse") return;
 
     if (firstTapRef.current === false) {
@@ -164,27 +190,28 @@ export default function NoteNode({ id, x, y, label, expanded }: NoteNodeProps) {
     }
   };
 
-  const handleClick = () => {
-    if (isChoosingParent) {
-      setChosenParentNodeId?.(id);
-    }
-  };
-
   const handleDoubleClick = () => {
-    if (!hasChildren) return;
-    const newExpanded = expanded === false ? true : false;
+    
+    if(!browseMode) {
+      if(isDetail) {
+        navigate(`/noteDetails/${id}`)
+      }
+    }
 
-    setFlatTree?.((prev) => {
-      return prev.map((item) => {
-        if (item.id === id) {
-          return {
-            ...item,
-            expanded: newExpanded || newExpanded === undefined,
-          };
-        }
-        return item;
-      });
-    });
+    // if (!editMode || !hasChildren) return;
+    // const newExpanded = expanded === false ? true : false;
+
+    // setFlatTree?.((prev) => {
+    //   return prev.map((item) => {
+    //     if (item.id === id) {
+    //       return {
+    //         ...item,
+    //         expanded: newExpanded || newExpanded === undefined,
+    //       };
+    //     }
+    //     return item;
+    //   });
+    // });
   };
 
   // drag node
@@ -268,7 +295,7 @@ export default function NoteNode({ id, x, y, label, expanded }: NoteNodeProps) {
         e.target as SVGGElement
       ).getBoundingClientRect();
 
-      selectedNodeIdRef!.current = e.detail.nodeId;
+      setSelectedNodeId?.(e.detail.nodeId);
 
       nodeMenuRef?.current?.setPosition({
         x: left + width + 12,
@@ -282,7 +309,7 @@ export default function NoteNode({ id, x, y, label, expanded }: NoteNodeProps) {
     return () => {
       gElem?.removeEventListener("nodemenu", onNodeMenu as EventListener);
     };
-  }, [selectedNodeIdRef, nodeMenuRef, setNodeMenuVisible]);
+  }, [setSelectedNodeId, nodeMenuRef, setNodeMenuVisible]);
 
   useEffect(() => {
     return () => {
@@ -303,7 +330,7 @@ export default function NoteNode({ id, x, y, label, expanded }: NoteNodeProps) {
     // drag -> move node
     // long tap(right click) -> open menu
     <g
-      className={"cursor-pointer"}
+      className={editMode ? "cursor-pointer" : ""}
       key={id}
       transform={`translate(${x}, ${y})`}
       ref={gRef}
@@ -312,16 +339,22 @@ export default function NoteNode({ id, x, y, label, expanded }: NoteNodeProps) {
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerCancel}
-      onClick={handleClick}
       onDoubleClick={handleDoubleClick}
     >
-      <NodeLabel label={label}></NodeLabel>
+      <NodeLabel
+        label={label}
+        marked={marked}
+        isDetail={isDetail}
+        size={nodeLabelSize}
+        setSize={setNodeLabelSize}
+      ></NodeLabel>
 
-      {hasChildren && (
+      {/* expand icon */}
+      {/* {editMode && hasChildren && (
         <text
           className="select-none"
           x={0}
-          y={-24}
+          y={nodeLabelSize.height / -2 - 8}
           fill="white"
           textAnchor="middle"
           dominantBaseline="middle"
@@ -329,7 +362,7 @@ export default function NoteNode({ id, x, y, label, expanded }: NoteNodeProps) {
         >
           {expanded === false ? "+" : "-"}
         </text>
-      )}
+      )} */}
     </g>
   );
 }
@@ -340,15 +373,17 @@ const TEXT_HEIGHT = 20.5;
 
 interface NodeLabelProps {
   label: string;
+  marked?: boolean;
+  isDetail?: boolean;
+  size: Size;
+  setSize: React.Dispatch<React.SetStateAction<Size>>;
 }
-function NodeLabel({ label }: NodeLabelProps) {
+function NodeLabel({ label, marked, isDetail, size, setSize }: NodeLabelProps) {
   const textList = label.split("\n");
   const textsRef = useRef<Map<number, SVGTextElement>>(new Map());
 
-  const [rectSize, setRectSize] = useState<{ width: number; height: number }>({
-    width: 0,
-    height: 0,
-  });
+  const paperContext = use(PaperContext);
+  const browseMode = paperContext?.browseMode;
 
   useLayoutEffect(() => {
     if (textsRef.current) {
@@ -361,27 +396,28 @@ function NodeLabel({ label }: NodeLabelProps) {
         widthList.push(bbox.width);
       }
 
-      setRectSize({
+      setSize({
         width: Math.max(...widthList) + PADDING_X,
         height: textsRef.current.size * TEXT_HEIGHT + PADDING_Y,
       });
     }
-  }, [label]);
+  }, [label, setSize]);
 
   return (
     <>
       <rect
-        x={rectSize.width / -2}
-        y={rectSize.height / -2}
-        width={rectSize.width}
-        height={rectSize.height}
-        fill="var(--color-node)"
+        x={size.width / -2}
+        y={size.height / -2}
+        width={size.width}
+        height={size.height}
+        fill={isDetail ? "var(--color-node-detail)" : "var(--color-node)"}
         rx="6"
         ry="6"
       />
 
       {textList.map((text, index) => (
         <text
+          key={index}
           ref={(node) => {
             if (node) {
               textsRef.current.set(index, node);
@@ -391,13 +427,15 @@ function NodeLabel({ label }: NodeLabelProps) {
               textsRef.current.delete(index);
             };
           }}
-          x={0}
+          x={size.width / -2 + PADDING_X / 2}
           y={0}
           dy={index * TEXT_HEIGHT + ((textList.length - 1) * TEXT_HEIGHT) / -2}
-          fill="white"
-          textAnchor="middle"
+          fill={marked ? "var(--color-node-marked)" : "white"}
           dominantBaseline="central"
-          className="select-none"
+          style={{ fontFamily: "monospace" }}
+          className={browseMode ? "select-none" : ""}
+          // 给 <text> 元素添加 xml:space="preserve" 属性，可以保留原始空格和换行（类似于 HTML 中的 <pre> 标签）
+          xmlSpace="preserve"
         >
           {text}
         </text>
