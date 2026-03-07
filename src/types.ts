@@ -1,3 +1,4 @@
+
 export interface NodeData {
   id: number | string;
   pid?: number | string | null;
@@ -12,9 +13,13 @@ export interface NodeData {
   children?: NodeData[];
   expanded?: boolean;
   nodeType?: NodeType;
+  contentType?: NodeContentType;
+  isTempImageUrl?: boolean;
+  imageUrl?: string;
 }
 
 export type NodeType = "new" | "edited" | "deleted";
+export type NodeContentType = 'text' | 'image'
 
 export interface NoteDetailData {
   /**

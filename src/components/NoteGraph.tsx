@@ -17,8 +17,13 @@ import NodeMenu, { type NodeMenuExpose } from "../components/NodeMenu";
 import NoteTree from "../components/NoteTree";
 import PaperContext from "../context/paperContext";
 import useModal from "../components/useModal";
-import { type NodeData, type NoteDetailData } from "../types";
+import {
+  type NodeContentType,
+  type NodeData,
+  type NoteDetailData,
+} from "../types";
 import { API_BASE_URL } from "../api";
+import FilePicker from "./FilePicker";
 
 interface GestureInfo {
   type: "none" | "panning" | "pinchAndZoom";
@@ -39,7 +44,7 @@ interface NoteGraphProps {
   noteDetail?: NoteDetailData | null;
   flatTree: NodeData[];
   setFlatTree: React.Dispatch<React.SetStateAction<NodeData[]>>;
-  onExitEdit: () => void
+  onExitEdit: () => void;
 }
 
 const NoteGraph = memo<NoteGraphProps>(
@@ -72,6 +77,9 @@ const NoteGraph = memo<NoteGraphProps>(
 
     // const [isAllExpanded, setIsAllExpand] = useState(true);
 
+    // browse mode
+    const [browseMode, setBrowseMode] = useState(true);
+
     // edit mode
     const [editMode, setEditMode] = useState(false);
     const [nodeMenuVisible, setNodeMenuVisible] = useState(false);
@@ -79,6 +87,7 @@ const NoteGraph = memo<NoteGraphProps>(
     const [selectedNodeId, setSelectedNodeId] = useState<
       number | string | null
     >(null);
+    // detail node is only for directory graph
     const [isDetailNode, setIsDetailNode] = useState(false);
 
     // add new node
@@ -93,9 +102,15 @@ const NoteGraph = memo<NoteGraphProps>(
       ),
     });
     const newNodeAddModalInputRef = useRef<HTMLTextAreaElement>(null);
-
-    // browse mode
-    const [browseMode, setBrowseMode] = useState(true);
+    // for choosing new node content type: text or image
+    const [newNodeContentType, setNewNodeContentType] =
+      useState<NodeContentType>("text");
+    // for previewing the selected image file before uploading
+    const [tempFileUrl, setTempFileUrl] = useState<string | null>(null);
+    // for uploading
+    const tempFileRef = useRef<File | null>(null);
+    // for uploading
+    const uuidToFileMapRef = useRef<Record<string, File>>({});
 
     // edit node
     const {
@@ -177,6 +192,8 @@ const NoteGraph = memo<NoteGraphProps>(
     const handleAddNewNode = () => {
       setNodeEditContent("");
       setIsDetailNode(false);
+      setNewNodeContentType("text");
+      setTempFileUrl(null);
       openNewNodeAddModal();
     };
 
@@ -207,6 +224,13 @@ const NoteGraph = memo<NoteGraphProps>(
               ...node,
               pid: null,
             });
+          } else if (node.contentType === "image") {
+            added.push({
+              ...node,
+              // 无需传
+              isTempImageUrl: undefined,
+              imageUrl: undefined,
+            });
           } else {
             added.push(node);
           }
@@ -217,7 +241,12 @@ const NoteGraph = memo<NoteGraphProps>(
         }
       }
 
-      const params: any = {
+      const params: {
+        added: NodeData[];
+        updated: NodeData[];
+        deletedNodeIds: (number | string)[];
+        noteDetailId?: number;
+      } = {
         added,
         updated,
         deletedNodeIds,
@@ -234,15 +263,21 @@ const NoteGraph = memo<NoteGraphProps>(
 
       // console.log(added, updated, deletedNodeIds);
 
+      const fd = new FormData();
+      fd.append("params", JSON.stringify(params));
+      for (const [uuid, file] of Object.entries(uuidToFileMapRef.current)) {
+        fd.append(uuid, file);
+      }
+
       const response = await fetch(url, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(params),
+        body: fd,
       });
       const res = await response.json();
       if (res.code === 0) {
+        // reset
+        uuidToFileMapRef.current = {};
+
         // 根据返回结果，更新 flatTree
         const newFlatTree = [];
 
@@ -276,7 +311,7 @@ const NoteGraph = memo<NoteGraphProps>(
 
     const handleExitEdit = () => {
       setEditMode(false);
-      onExitEdit()
+      onExitEdit();
     };
 
     const resetZoom = () => {
@@ -299,6 +334,8 @@ const NoteGraph = memo<NoteGraphProps>(
     const handleNodeAddChild = () => {
       setNodeEditContent("");
       setIsDetailNode(false);
+      setNewNodeContentType("text");
+      setTempFileUrl(null);
       openNodeAddModal();
     };
 
@@ -361,8 +398,20 @@ const NoteGraph = memo<NoteGraphProps>(
         pid: null,
         puuid: null,
         nodeType: "new",
+        // directory graph only
         isDetail: isDetailNode,
+        contentType: newNodeContentType,
+        isTempImageUrl: newNodeContentType === "image" ? true : undefined,
+        imageUrl:
+          newNodeContentType === "image"
+            ? (tempFileUrl ?? undefined)
+            : undefined,
       };
+
+      if (newNodeContentType === "image" && tempFileRef.current) {
+        uuidToFileMapRef.current[newNode.id] = tempFileRef.current;
+        tempFileRef.current = null;
+      }
 
       setFlatTree((prev) => [...prev, newNode]);
 
@@ -412,7 +461,14 @@ const NoteGraph = memo<NoteGraphProps>(
           x: pNode.x + 100,
           y: pNode.y + 100,
           nodeType: "new",
+          // directory graph only
           isDetail: isDetailNode,
+          contentType: newNodeContentType,
+          isTempImageUrl: newNodeContentType === "image" ? true : undefined,
+          imageUrl:
+            newNodeContentType === "image"
+              ? (tempFileUrl ?? undefined)
+              : undefined,
         };
       } else {
         // 旧结点的新增子结点
@@ -425,8 +481,20 @@ const NoteGraph = memo<NoteGraphProps>(
           x: pNode.x + 100,
           y: pNode.y + 100,
           nodeType: "new",
+          // directory graph only
           isDetail: isDetailNode,
+          contentType: newNodeContentType,
+          isTempImageUrl: newNodeContentType === "image" ? true : undefined,
+          imageUrl:
+            newNodeContentType === "image"
+              ? (tempFileUrl ?? undefined)
+              : undefined,
         };
+      }
+
+      if (newNodeContentType === "image" && tempFileRef.current) {
+        uuidToFileMapRef.current[newNode.id] = tempFileRef.current;
+        tempFileRef.current = null;
       }
 
       setFlatTree((prev) => [...prev, newNode]);
@@ -471,6 +539,20 @@ const NoteGraph = memo<NoteGraphProps>(
 
       closeNodeDeleteConfirmModal();
       handleNodeMenuClose();
+    };
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      // console.log("selected file:", file);
+      const fr = new FileReader();
+      fr.readAsDataURL(file);
+      fr.onload = () => {
+        const result = fr.result as string;
+        setTempFileUrl(result);
+        tempFileRef.current = file;
+      };
     };
 
     useLayoutEffect(() => {
@@ -869,7 +951,7 @@ const NoteGraph = memo<NoteGraphProps>(
                         type="checkbox"
                         checked={isDetailNode}
                         onChange={(e) => setIsDetailNode(e.target.checked)}
-                      />{" "}
+                      />
                       detail node
                     </label>
                   )}
@@ -880,14 +962,46 @@ const NoteGraph = memo<NoteGraphProps>(
                 </div>
               }
             >
-              <textarea
-                ref={newNodeAddModalInputRef}
-                className="bg-textarea w-full resize-none p-2 outline-none"
-                rows={6}
-                maxLength={500}
-                value={nodeEditContent}
-                onChange={(e) => setNodeEditContent(e.target.value)}
-              />
+              <div className="mb-4">
+                <label className="mr-4">
+                  text
+                  <input
+                    type="radio"
+                    name="nodeType"
+                    checked={newNodeContentType === "text"}
+                    onChange={() => setNewNodeContentType("text")}
+                  />
+                </label>
+                <label>
+                  image
+                  <input
+                    type="radio"
+                    name="nodeType"
+                    checked={newNodeContentType === "image"}
+                    onChange={() => setNewNodeContentType("image")}
+                  />
+                </label>
+              </div>
+              <div>
+                {newNodeContentType === "text" ? (
+                  <textarea
+                    ref={newNodeAddModalInputRef}
+                    className="bg-textarea w-full resize-none p-2 outline-none"
+                    rows={6}
+                    maxLength={500}
+                    value={nodeEditContent}
+                    onChange={(e) => setNodeEditContent(e.target.value)}
+                  />
+                ) : (
+                  <>
+                    <FilePicker handleFileChange={handleFileChange} />
+                    <div className="mt-4">
+                      {/* image preview */}
+                      {tempFileUrl && <img src={tempFileUrl} />}
+                    </div>
+                  </>
+                )}
+              </div>
             </NewNodeAddModal>
 
             <NodeEditModal
@@ -923,7 +1037,7 @@ const NoteGraph = memo<NoteGraphProps>(
                         type="checkbox"
                         checked={isDetailNode}
                         onChange={(e) => setIsDetailNode(e.target.checked)}
-                      />{" "}
+                      />
                       detail node
                     </label>
                   )}
@@ -934,14 +1048,46 @@ const NoteGraph = memo<NoteGraphProps>(
                 </div>
               }
             >
-              <textarea
-                ref={nodeAddModalInputRef}
-                className="bg-textarea w-full resize-none p-2 outline-none"
-                rows={6}
-                maxLength={500}
-                value={nodeEditContent}
-                onChange={(e) => setNodeEditContent(e.target.value)}
-              />
+              <div className="mb-4">
+                <label className="mr-4">
+                  text
+                  <input
+                    type="radio"
+                    name="nodeType"
+                    checked={newNodeContentType === "text"}
+                    onChange={() => setNewNodeContentType("text")}
+                  />
+                </label>
+                <label>
+                  image
+                  <input
+                    type="radio"
+                    name="nodeType"
+                    checked={newNodeContentType === "image"}
+                    onChange={() => setNewNodeContentType("image")}
+                  />
+                </label>
+              </div>
+              <div>
+                {newNodeContentType === "text" ? (
+                  <textarea
+                    ref={nodeAddModalInputRef}
+                    className="bg-textarea w-full resize-none p-2 outline-none"
+                    rows={6}
+                    maxLength={500}
+                    value={nodeEditContent}
+                    onChange={(e) => setNodeEditContent(e.target.value)}
+                  />
+                ) : (
+                  <>
+                    <FilePicker handleFileChange={handleFileChange} />
+                    <div className="mt-4">
+                      {/* image preview */}
+                      {tempFileUrl && <img src={tempFileUrl} />}
+                    </div>
+                  </>
+                )}
+              </div>
             </NodeAddModal>
 
             <NodeDeleteConfirmModal

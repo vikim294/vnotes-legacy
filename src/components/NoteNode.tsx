@@ -10,16 +10,7 @@ import PaperContext from "../context/paperContext";
 import { findDescendantsByIdInFlatTree } from "../lib";
 import type { Size } from "../types/note";
 import { useNavigate } from "react-router";
-
-interface NoteNodeProps {
-  id: number | string;
-  x: number;
-  y: number;
-  label: string;
-  expanded?: boolean;
-  marked?: boolean;
-  isDetail?: boolean;
-}
+import type { NodeData } from "../types";
 
 const createNodeMenuEvent = (detail: {
   nodeId: number | string;
@@ -40,11 +31,15 @@ export default function NoteNode({
   // expanded,
   marked,
   isDetail,
-}: NoteNodeProps) {
-  const navigate = useNavigate()
+  contentType,
+  imageUrl,
+  isTempImageUrl,
+}: NodeData) {
+  const navigate = useNavigate();
 
   // context
   const paperContext = use(PaperContext);
+  const graphType = paperContext?.graphType;
   const browseMode = paperContext?.browseMode;
   const flatTree = paperContext?.flatTree;
   const editMode = paperContext?.editMode;
@@ -83,8 +78,8 @@ export default function NoteNode({
   // used for double tap
   const firstTapRef = useRef(false);
 
-  // node label size
-  const [nodeLabelSize, setNodeLabelSize] = useState<Size>({
+  // node size
+  const [nodeSize, setNodeSize] = useState<Size>({
     width: 0,
     height: 0,
   });
@@ -191,10 +186,9 @@ export default function NoteNode({
   };
 
   const handleDoubleClick = () => {
-    
-    if(!browseMode) {
-      if(isDetail) {
-        navigate(`/noteDetails/${id}`)
+    if (!browseMode) {
+      if (isDetail) {
+        navigate(`/noteDetails/${id}`);
       }
     }
 
@@ -341,13 +335,24 @@ export default function NoteNode({
       onPointerCancel={handlePointerCancel}
       onDoubleClick={handleDoubleClick}
     >
-      <NodeLabel
-        label={label}
-        marked={marked}
-        isDetail={isDetail}
-        size={nodeLabelSize}
-        setSize={setNodeLabelSize}
-      ></NodeLabel>
+      {(graphType === "directory" || contentType === "text") && (
+        <NodeLabel
+          label={label}
+          marked={marked}
+          isDetail={isDetail}
+          size={nodeSize}
+          setSize={setNodeSize}
+        ></NodeLabel>
+      )}
+
+      {contentType === "image" && (
+        <NodeImage
+          isTempImageUrl={isTempImageUrl}
+          imageUrl={imageUrl}
+          size={nodeSize}
+          setSize={setNodeSize}
+        ></NodeImage>
+      )}
 
       {/* expand icon */}
       {/* {editMode && hasChildren && (
@@ -440,6 +445,58 @@ function NodeLabel({ label, marked, isDetail, size, setSize }: NodeLabelProps) {
           {text}
         </text>
       ))}
+    </>
+  );
+}
+
+interface NodeImageProps {
+  isTempImageUrl?: boolean;
+  imageUrl?: string;
+  size: Size;
+  setSize: React.Dispatch<React.SetStateAction<Size>>;
+}
+
+function NodeImage({
+  isTempImageUrl,
+  imageUrl,
+  size,
+  setSize,
+}: NodeImageProps) {
+  const imageRef = useRef<SVGImageElement | null>(null);
+
+  const onImageLoad = () => {
+    if (imageUrl && imageRef.current) {
+      const { width, height } = imageRef.current.getBBox();
+
+      setSize({
+        width: width + PADDING_X,
+        height: height + PADDING_Y,
+      });
+    }
+  };
+
+  return (
+    <>
+      <rect
+        x={size.width / -2}
+        y={size.height / -2}
+        width={size.width}
+        height={size.height}
+        fill={"var(--color-node)"}
+        rx="6"
+        ry="6"
+      />
+      <image
+        ref={imageRef}
+        href={
+          isTempImageUrl
+            ? imageUrl
+            : `${import.meta.env.VITE_IMAGE_BASE_URL}/${imageUrl}`
+        }
+        x={-size.width / 2 + PADDING_X / 2}
+        y={-size.height / 2 + PADDING_Y / 2}
+        onLoad={onImageLoad}
+      />
     </>
   );
 }

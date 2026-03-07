@@ -50,13 +50,7 @@ const NoteTree = ({ flatTree }: NoteTreeProps) => {
       const n = (
         <NoteNode
           key={node.id}
-          id={node.id}
-          x={node.x}
-          y={node.y}
-          label={node.label}
-          expanded={node.expanded}
-          marked={node.marked}
-          isDetail={node.isDetail}
+          {...node}
         />
       );
       nodes.push(n);

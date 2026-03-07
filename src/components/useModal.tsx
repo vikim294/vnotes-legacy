@@ -47,7 +47,9 @@ export default function useModal({ onModalVisible }: UseModalProps = {}) {
                 </h3>
               </div>
             )}
-            <div className="px-6 py-4 text-slate-200">{children}</div>
+            <div className="px-6 py-4 text-slate-200" style={{ maxHeight: '60vh', overflowY: "auto" }}>
+              {children}
+            </div>
             {footer && (
               <div className="bg-surface-800/50 flex justify-end gap-2 rounded-b-xl px-6 py-4">
                 {footer}
