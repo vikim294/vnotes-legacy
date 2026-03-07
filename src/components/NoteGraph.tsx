@@ -972,15 +972,17 @@ const NoteGraph = memo<NoteGraphProps>(
                     onChange={() => setNewNodeContentType("text")}
                   />
                 </label>
-                <label>
-                  image
-                  <input
-                    type="radio"
-                    name="nodeType"
-                    checked={newNodeContentType === "image"}
-                    onChange={() => setNewNodeContentType("image")}
-                  />
-                </label>
+                {graphType === "detail" && (
+                  <label>
+                    image
+                    <input
+                      type="radio"
+                      name="nodeType"
+                      checked={newNodeContentType === "image"}
+                      onChange={() => setNewNodeContentType("image")}
+                    />
+                  </label>
+                )}
               </div>
               <div>
                 {newNodeContentType === "text" ? (
@@ -1058,15 +1060,17 @@ const NoteGraph = memo<NoteGraphProps>(
                     onChange={() => setNewNodeContentType("text")}
                   />
                 </label>
-                <label>
-                  image
-                  <input
-                    type="radio"
-                    name="nodeType"
-                    checked={newNodeContentType === "image"}
-                    onChange={() => setNewNodeContentType("image")}
-                  />
-                </label>
+                {graphType === "detail" && (
+                  <label>
+                    image
+                    <input
+                      type="radio"
+                      name="nodeType"
+                      checked={newNodeContentType === "image"}
+                      onChange={() => setNewNodeContentType("image")}
+                    />
+                  </label>
+                )}
               </div>
               <div>
                 {newNodeContentType === "text" ? (
