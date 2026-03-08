@@ -4,7 +4,7 @@ import { createRoot } from "react-dom/client";
 type ToastType = "info" | "error" | "success" | "warning";
 
 export class Toast {
-  static show(msg: string, type?: ToastType = "info") {
+  static show(msg: string, type: ToastType = "info") {
     // 给body添加一个toast 元素，3秒后销毁
 
     // 创建容器
