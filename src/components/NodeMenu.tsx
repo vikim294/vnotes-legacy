@@ -71,7 +71,9 @@ export default function NodeMenu({
         onPointerDown={(e) => e.stopPropagation()}
       >
         <Button className="block w-full" onClick={onEdit}>
-          edit content
+          {
+            selectedNode?.contentType === "image" ? "change image" : "edit text"
+          }
         </Button>
         {
           !selectedNode?.isDetail && (
@@ -87,7 +89,7 @@ export default function NodeMenu({
         <Button className="block w-full" onClick={onDisconnectFromParent}>
           disconnect from parent
         </Button>
-        {graphType === "detail" && (
+        {graphType === "detail" && selectedNode?.contentType !== "image" && (
           <Button className="block w-full" onClick={onToggleMark}>
             {selectedNode?.marked ? "unmark" : "mark"}
           </Button>

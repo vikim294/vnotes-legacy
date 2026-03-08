@@ -87,6 +87,9 @@ const NoteGraph = memo<NoteGraphProps>(
     const [selectedNodeId, setSelectedNodeId] = useState<
       number | string | null
     >(null);
+    const selectedNode = useMemo(() => {
+      return flatTree.find((node) => node.id === selectedNodeId) ?? null;
+    }, [flatTree, selectedNodeId]);
     // detail node is only for directory graph
     const [isDetailNode, setIsDetailNode] = useState(false);
 
@@ -103,14 +106,16 @@ const NoteGraph = memo<NoteGraphProps>(
     });
     const newNodeAddModalInputRef = useRef<HTMLTextAreaElement>(null);
     // for choosing new node content type: text or image
-    const [newNodeContentType, setNewNodeContentType] =
+    const [nodeContentType, setNodeContentType] =
       useState<NodeContentType>("text");
     // for previewing the selected image file before uploading
     const [tempFileUrl, setTempFileUrl] = useState<string | null>(null);
     // for uploading
     const tempFileRef = useRef<File | null>(null);
-    // for uploading
+    // for uploading(add)
     const uuidToFileMapRef = useRef<Record<string, File>>({});
+    // for uploading(edit)
+    const idToFileMapRef = useRef<Record<number | string, File>>({});
 
     // edit node
     const {
@@ -192,7 +197,7 @@ const NoteGraph = memo<NoteGraphProps>(
     const handleAddNewNode = () => {
       setNodeEditContent("");
       setIsDetailNode(false);
-      setNewNodeContentType("text");
+      setNodeContentType("text");
       setTempFileUrl(null);
       openNewNodeAddModal();
     };
@@ -235,7 +240,16 @@ const NoteGraph = memo<NoteGraphProps>(
             added.push(node);
           }
         } else if (node.nodeType === "edited") {
-          updated.push(node);
+          if (node.contentType === "image") {
+            updated.push({
+              ...node,
+              // 无需传
+              isTempImageUrl: undefined,
+              imageUrl: undefined,
+            });
+          } else {
+            updated.push(node);
+          }
         } else if (node.nodeType === "deleted") {
           deletedNodeIds.push(node.id);
         }
@@ -268,6 +282,9 @@ const NoteGraph = memo<NoteGraphProps>(
       for (const [uuid, file] of Object.entries(uuidToFileMapRef.current)) {
         fd.append(uuid, file);
       }
+      for (const [id, file] of Object.entries(idToFileMapRef.current)) {
+        fd.append(id, file);
+      }
 
       const response = await fetch(url, {
         method: "POST",
@@ -277,6 +294,7 @@ const NoteGraph = memo<NoteGraphProps>(
       if (res.code === 0) {
         // reset
         uuidToFileMapRef.current = {};
+        idToFileMapRef.current = {};
 
         // 根据返回结果，更新 flatTree
         const newFlatTree = [];
@@ -328,13 +346,17 @@ const NoteGraph = memo<NoteGraphProps>(
       setNodeEditContent(
         flatTree.find((node) => node.id === selectedNodeId)?.label ?? "",
       );
+      setTempFileUrl(null);
+      if (selectedNode?.contentType === "image") {
+        setNodeContentType("image");
+      }
       openNodeEditModal();
     };
 
     const handleNodeAddChild = () => {
       setNodeEditContent("");
       setIsDetailNode(false);
-      setNewNodeContentType("text");
+      setNodeContentType("text");
       setTempFileUrl(null);
       openNodeAddModal();
     };
@@ -400,15 +422,15 @@ const NoteGraph = memo<NoteGraphProps>(
         nodeType: "new",
         // directory graph only
         isDetail: isDetailNode,
-        contentType: newNodeContentType,
-        isTempImageUrl: newNodeContentType === "image" ? true : undefined,
+        contentType: nodeContentType,
+        isTempImageUrl: nodeContentType === "image" ? true : undefined,
         imageUrl:
-          newNodeContentType === "image"
+          nodeContentType === "image"
             ? (tempFileUrl ?? undefined)
             : undefined,
       };
 
-      if (newNodeContentType === "image" && tempFileRef.current) {
+      if (nodeContentType === "image" && tempFileRef.current) {
         uuidToFileMapRef.current[newNode.id] = tempFileRef.current;
         tempFileRef.current = null;
       }
@@ -420,15 +442,29 @@ const NoteGraph = memo<NoteGraphProps>(
 
     const handleNodeEditConfirm = () => {
       if (!selectedNodeId) return;
+      if (selectedNode?.contentType === "image" && !tempFileUrl) {
+        alert("请上传图片后再确认");
+        return;
+      }
 
       setFlatTree((prev) => {
         const res = prev.map((node) => {
           if (node.id === selectedNodeId) {
-            return {
+            const newNode: NodeData = {
               ...node,
               label: nodeEditContent,
               nodeType: node.nodeType === "new" ? "new" : "edited",
-            } as NodeData;
+              isTempImageUrl: nodeContentType === "image" ? true : undefined,
+              imageUrl:
+                nodeContentType === "image"
+                  ? (tempFileUrl ?? undefined)
+                  : undefined,
+            };
+            if (nodeContentType === "image" && tempFileRef.current) {
+              idToFileMapRef.current[newNode.id] = tempFileRef.current;
+              tempFileRef.current = null;
+            }
+            return newNode;
           } else return node;
         });
 
@@ -463,10 +499,10 @@ const NoteGraph = memo<NoteGraphProps>(
           nodeType: "new",
           // directory graph only
           isDetail: isDetailNode,
-          contentType: newNodeContentType,
-          isTempImageUrl: newNodeContentType === "image" ? true : undefined,
+          contentType: nodeContentType,
+          isTempImageUrl: nodeContentType === "image" ? true : undefined,
           imageUrl:
-            newNodeContentType === "image"
+            nodeContentType === "image"
               ? (tempFileUrl ?? undefined)
               : undefined,
         };
@@ -483,16 +519,16 @@ const NoteGraph = memo<NoteGraphProps>(
           nodeType: "new",
           // directory graph only
           isDetail: isDetailNode,
-          contentType: newNodeContentType,
-          isTempImageUrl: newNodeContentType === "image" ? true : undefined,
+          contentType: nodeContentType,
+          isTempImageUrl: nodeContentType === "image" ? true : undefined,
           imageUrl:
-            newNodeContentType === "image"
+            nodeContentType === "image"
               ? (tempFileUrl ?? undefined)
               : undefined,
         };
       }
 
-      if (newNodeContentType === "image" && tempFileRef.current) {
+      if (nodeContentType === "image" && tempFileRef.current) {
         uuidToFileMapRef.current[newNode.id] = tempFileRef.current;
         tempFileRef.current = null;
       }
@@ -968,8 +1004,8 @@ const NoteGraph = memo<NoteGraphProps>(
                   <input
                     type="radio"
                     name="nodeType"
-                    checked={newNodeContentType === "text"}
-                    onChange={() => setNewNodeContentType("text")}
+                    checked={nodeContentType === "text"}
+                    onChange={() => setNodeContentType("text")}
                   />
                 </label>
                 {graphType === "detail" && (
@@ -978,14 +1014,14 @@ const NoteGraph = memo<NoteGraphProps>(
                     <input
                       type="radio"
                       name="nodeType"
-                      checked={newNodeContentType === "image"}
-                      onChange={() => setNewNodeContentType("image")}
+                      checked={nodeContentType === "image"}
+                      onChange={() => setNodeContentType("image")}
                     />
                   </label>
                 )}
               </div>
               <div>
-                {newNodeContentType === "text" ? (
+                {nodeContentType === "text" ? (
                   <textarea
                     ref={newNodeAddModalInputRef}
                     className="bg-textarea w-full resize-none p-2 outline-none"
@@ -1018,14 +1054,26 @@ const NoteGraph = memo<NoteGraphProps>(
                 </div>
               }
             >
-              <textarea
-                ref={nodeEditModalInputRef}
-                className="bg-textarea w-full resize-none p-2 outline-none"
-                rows={6}
-                maxLength={500}
-                value={nodeEditContent}
-                onChange={(e) => setNodeEditContent(e.target.value)}
-              />
+              {selectedNode?.contentType === "text" && (
+                <textarea
+                  ref={nodeEditModalInputRef}
+                  className="bg-textarea w-full resize-none p-2 outline-none"
+                  rows={6}
+                  maxLength={500}
+                  value={nodeEditContent}
+                  onChange={(e) => setNodeEditContent(e.target.value)}
+                />
+              )}
+
+              {selectedNode?.contentType === "image" && (
+                <>
+                  <FilePicker handleFileChange={handleFileChange} />
+                  <div className="mt-4">
+                    {/* image preview */}
+                    {tempFileUrl && <img src={tempFileUrl} />}
+                  </div>
+                </>
+              )}
             </NodeEditModal>
 
             <NodeAddModal
@@ -1056,8 +1104,8 @@ const NoteGraph = memo<NoteGraphProps>(
                   <input
                     type="radio"
                     name="nodeType"
-                    checked={newNodeContentType === "text"}
-                    onChange={() => setNewNodeContentType("text")}
+                    checked={nodeContentType === "text"}
+                    onChange={() => setNodeContentType("text")}
                   />
                 </label>
                 {graphType === "detail" && (
@@ -1066,14 +1114,14 @@ const NoteGraph = memo<NoteGraphProps>(
                     <input
                       type="radio"
                       name="nodeType"
-                      checked={newNodeContentType === "image"}
-                      onChange={() => setNewNodeContentType("image")}
+                      checked={nodeContentType === "image"}
+                      onChange={() => setNodeContentType("image")}
                     />
                   </label>
                 )}
               </div>
               <div>
-                {newNodeContentType === "text" ? (
+                {nodeContentType === "text" ? (
                   <textarea
                     ref={nodeAddModalInputRef}
                     className="bg-textarea w-full resize-none p-2 outline-none"
