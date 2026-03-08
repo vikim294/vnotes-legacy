@@ -1054,7 +1054,7 @@ const NoteGraph = memo<NoteGraphProps>(
                 </div>
               }
             >
-              {selectedNode?.contentType === "text" && (
+              {selectedNode?.contentType !== "image" && (
                 <textarea
                   ref={nodeEditModalInputRef}
                   className="bg-textarea w-full resize-none p-2 outline-none"
