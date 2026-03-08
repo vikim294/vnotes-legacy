@@ -104,6 +104,14 @@ export default function NoteNode({
         alert("new parent node cannot be itself!");
         return;
       }
+      // 检查是否选择了子孙节点作为父节点
+      if (flatTree && selectedNodeId) {
+        const descendants = findDescendantsByIdInFlatTree(flatTree, selectedNodeId);
+        if (descendants.some((node) => node.id === id)) {
+          alert("new parent node cannot be its descendant!");
+          return;
+        }
+      }
       setChosenParentNodeId?.(id);
       return;
     }
