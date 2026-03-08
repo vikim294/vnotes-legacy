@@ -841,7 +841,7 @@ const NoteGraph = memo<NoteGraphProps>(
           </div>
 
           {!isChoosingParent && chosenParentNodeId === null && isAuthorized && (
-            <div className="fixed top-25 right-0">
+            <div className="fixed top-25 right-0 w-36">
               {/* expand/collapse all button */}
               {/* <div>
                 <Button
@@ -864,6 +864,7 @@ const NoteGraph = memo<NoteGraphProps>(
 
               <div>
                 <Button
+                  className="block w-full"
                   onClick={() => {
                     const newValue = !browseMode;
 
@@ -876,7 +877,7 @@ const NoteGraph = memo<NoteGraphProps>(
 
               {/* edit mode */}
               {!editMode && (
-                <Button type="primary" onClick={() => setEditMode(true)}>
+                <Button className="block w-full" type="primary" onClick={() => setEditMode(true)}>
                   edit mode
                 </Button>
               )}
@@ -884,17 +885,17 @@ const NoteGraph = memo<NoteGraphProps>(
               {editMode && (
                 <>
                   <div>
-                    <Button type="secondary" onClick={handleAddNewNode}>
+                    <Button className="block w-full" type="secondary" onClick={handleAddNewNode}>
                       add new node
                     </Button>
                   </div>
                   <div>
-                    <Button type="primary" onClick={handleSaveEdit}>
+                    <Button className="block w-full" type="primary" onClick={handleSaveEdit}>
                       save
                     </Button>
                   </div>
                   <div>
-                    <Button onClick={handleExitEdit}>exit</Button>
+                    <Button className="block w-full" onClick={handleExitEdit}>exit</Button>
                   </div>
                 </>
               )}
@@ -1046,7 +1047,7 @@ const NoteGraph = memo<NoteGraphProps>(
               width={800}
               header="编辑结点"
               footer={
-                <div>
+                <div className="flex items-center gap-4">
                   <Button onClick={closeNodeEditModal}>取消</Button>
                   <Button type="primary" onClick={handleNodeEditConfirm}>
                     确认

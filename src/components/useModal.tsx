@@ -32,7 +32,7 @@ export default function useModal({ onModalVisible }: UseModalProps = {}) {
 
       return createPortal(
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 p-4"
           onPointerDown={closeOnClickMask ? closeModal : undefined}
         >
           <div

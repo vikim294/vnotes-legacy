@@ -471,7 +471,7 @@ function NodeImage({
 
       setSize({
         width: width + PADDING_X,
-        height: height + PADDING_Y,
+        height: height + PADDING_X,
       });
     }
   };
@@ -491,7 +491,7 @@ function NodeImage({
         ref={imageRef}
         href={getImageNodeUrl(imageUrl, isTempImageUrl)}
         x={-size.width / 2 + PADDING_X / 2}
-        y={-size.height / 2 + PADDING_Y / 2}
+        y={-size.height / 2 + PADDING_X / 2}
         onLoad={onImageLoad}
       />
     </>
