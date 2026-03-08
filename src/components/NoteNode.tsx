@@ -49,6 +49,7 @@ export default function NoteNode({
   const isChoosingParent = paperContext?.isChoosingParent;
   const setFlatTree = paperContext?.setFlatTree;
   const setNodeMenuVisible = paperContext?.setNodeMenuVisible;
+  const selectedNodeId = paperContext?.selectedNodeId;
   const setChosenParentNodeId = paperContext?.setChosenParentNodeId;
 
   const gRef = useRef<SVGGElement | null>(null);
@@ -98,6 +99,11 @@ export default function NoteNode({
 
   const handlePointerDown = (e: React.PointerEvent<SVGGElement>) => {
     if (isChoosingParent) {
+      // 检查是否选择了自身作为父节点
+      if (id === selectedNodeId) {
+        alert("new parent node cannot be itself!");
+        return;
+      }
       setChosenParentNodeId?.(id);
       return;
     }
