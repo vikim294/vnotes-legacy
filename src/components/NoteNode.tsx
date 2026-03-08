@@ -11,6 +11,7 @@ import { findDescendantsByIdInFlatTree } from "../lib";
 import type { Size } from "../types/note";
 import { useNavigate } from "react-router";
 import type { NodeData } from "../types";
+import { getImageNodeUrl } from "../utils";
 
 const createNodeMenuEvent = (detail: {
   nodeId: number | string;
@@ -359,7 +360,7 @@ export default function NoteNode({
         ></NodeLabel>
       )}
 
-      {contentType === "image" && (
+      {contentType === "image" && imageUrl && (
         <NodeImage
           isTempImageUrl={isTempImageUrl}
           imageUrl={imageUrl}
@@ -465,7 +466,7 @@ function NodeLabel({ label, marked, isDetail, size, setSize }: NodeLabelProps) {
 
 interface NodeImageProps {
   isTempImageUrl?: boolean;
-  imageUrl?: string;
+  imageUrl: string;
   size: Size;
   setSize: React.Dispatch<React.SetStateAction<Size>>;
 }
@@ -484,7 +485,7 @@ function NodeImage({
 
       setSize({
         width: width + PADDING_X,
-        height: height + PADDING_Y,
+        height: height + PADDING_X,
       });
     }
   };
@@ -502,13 +503,9 @@ function NodeImage({
       />
       <image
         ref={imageRef}
-        href={
-          isTempImageUrl
-            ? imageUrl
-            : `${import.meta.env.VITE_IMAGE_BASE_URL}/${imageUrl}`
-        }
+        href={getImageNodeUrl(imageUrl, isTempImageUrl)}
         x={-size.width / 2 + PADDING_X / 2}
-        y={-size.height / 2 + PADDING_Y / 2}
+        y={-size.height / 2 + PADDING_X / 2}
         onLoad={onImageLoad}
       />
     </>

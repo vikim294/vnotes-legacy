@@ -115,7 +115,9 @@ export default function NodeMenu({
       >
         {/* 编辑节点内容 */}
         <Button className="block w-full" onClick={onEdit}>
-          edit content
+          {
+            selectedNode?.contentType === "image" ? "change image" : "edit text"
+          }
         </Button>
         {
           !selectedNode?.isDetail && (
@@ -134,8 +136,8 @@ export default function NodeMenu({
         <Button className="block w-full" onClick={onDisconnectFromParent}>
           disconnect from parent
         </Button>
-        {/* 标记功能 - 仅在 detail 视图中可用，用于高亮重要节点 */}
-        {graphType === "detail" && (
+        {/* 标记功能 - 仅在 detail 视图中可用，且图片节点不支持标记 */}
+        {graphType === "detail" && selectedNode?.contentType !== "image" && (
           <Button className="block w-full" onClick={onToggleMark}>
             {selectedNode?.marked ? "unmark" : "mark"}
           </Button>
