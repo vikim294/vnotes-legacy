@@ -17,6 +17,7 @@ import NodeMenu, { type NodeMenuExpose } from "../components/NodeMenu";
 import NoteTree from "../components/NoteTree";
 import PaperContext from "../context/paperContext";
 import useModal from "../components/useModal";
+import { Toast } from "../components/Toast";
 import {
   type NodeContentType,
   type NodeData,
@@ -443,7 +444,7 @@ const NoteGraph = memo<NoteGraphProps>(
     const handleNodeEditConfirm = () => {
       if (!selectedNodeId) return;
       if (selectedNode?.contentType === "image" && !tempFileUrl) {
-        alert("请上传图片后再确认");
+        Toast.error("请上传图片后再确认");
         return;
       }
 
