@@ -70,7 +70,7 @@ const ToastComp = ({ msg, type, onClose }: ToastCompProps) => {
 
   return (
     <div
-      className={`${bgClassName} fixed top-10 left-1/2 -translate-x-1/2 rounded-lg px-3 py-2 text-white`}
+      className={`${bgClassName} fixed top-10 left-1/2 -translate-x-1/2 rounded-lg px-3 py-2 text-white z-40`}
     >
       {msg}
     </div>
