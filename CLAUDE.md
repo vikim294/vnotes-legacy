@@ -36,9 +36,10 @@ All routes except `/unauthorized` are wrapped in `AuthGuard` for authentication.
 - `NoteGraph.tsx` - Main graph visualization component using SVG. Handles panning, zooming, node rendering, and edit mode.
 - `NoteNode.tsx` - Renders individual nodes in the graph with support for text and image content.
 - `NoteTree.tsx` - Renders tree connections (lines) between nodes.
-- `NodeMenu.tsx` - Context menu for node operations (add sibling, add child, edit, delete, set parent).
-- `AuthGuard.tsx` - Authentication check wrapper.
+- `NodeMenu.tsx` - Context menu for node operations (add sibling, add child, edit, delete, set parent, disconnect, toggle mark).
+- `AuthGuard.tsx` - Authentication check wrapper with server-side token verification.
 - `Toast.tsx` - Toast notification system.
+- `Button.tsx` - Reusable button component with `disabled` prop support.
 
 ### Data Model
 
@@ -73,6 +74,14 @@ The application uses a flat tree structure (`flatTree`) for rendering but mainta
 - `selectedNodeId`: Currently selected node
 - `isChoosingParent`: State for parent selection mode
 - `flatTree`: Array of all nodes
+- `isSaving`: Loading state during save operations (hides other buttons, disables save)
+
+### Authentication
+
+Server-side token verification via `/api/auth/verify` endpoint:
+- Token stored in localStorage under key "vnote"
+- Public paths bypass auth: `/noteDetails/49`, `/noteDetails/22`
+- AuthGuard validates tokens asynchronously on mount
 
 ### API and Environment
 
@@ -81,6 +90,9 @@ API endpoints are configured via environment variables:
 - `VITE_IMAGE_BASE_URL` - Image server base URL
 
 Development defaults to `http://localhost:2940`, production uses `https://vnote.cloud`.
+
+Key API functions in `api.ts`:
+- `verifyToken(token)` - POST to `/auth/verify` to validate authentication
 
 ### Graph Modes
 
@@ -91,6 +103,7 @@ The app supports two graph types:
 Each graph supports:
 - **Browse mode**: Pan and zoom the canvas
 - **Edit mode**: Add, edit, delete, and move nodes; set parent relationships
+- **Reset view**: Resets zoom to 1 and centers on first root node (`pid === null`)
 
 ### Utility Functions
 
