@@ -1,39 +1,57 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
+import { verifyToken } from "../api";
 
 interface AuthGuardProps {
   children: React.ReactNode;
 }
 
+const PUBLIC_PATHS = ["/noteDetails/49", "/noteDetails/22"];
+
 const AuthGuard = ({ children }: AuthGuardProps) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
   useEffect(() => {
-    const authKey = localStorage.getItem("vnote");
+    const checkAuth = async () => {
+      // Public paths don't need authentication
+      if (PUBLIC_PATHS.includes(location.pathname)) {
+        setIsAuthenticated(true);
+        return;
+      }
 
-    if (
-      location.pathname === "/noteDetails/49" ||
-      location.pathname === "/noteDetails/22"
-    ) {
-      return;
-    }
+      const storedToken = localStorage.getItem("vnote");
 
-    if (authKey !== "294") {
-      navigate("/unauthorized", { replace: true });
-    }
+      if (!storedToken) {
+        setIsAuthenticated(false);
+        navigate("/unauthorized", { replace: true });
+        return;
+      }
+
+      // Verify token with backend
+      const isValid = await verifyToken(storedToken);
+
+      if (isValid) {
+        setIsAuthenticated(true);
+      } else {
+        // Token is invalid, clear it and redirect
+        localStorage.removeItem("vnote");
+        setIsAuthenticated(false);
+        navigate("/unauthorized", { replace: true });
+      }
+    };
+
+    checkAuth();
   }, [navigate, location.pathname]);
 
-  const authKey = localStorage.getItem("vnote");
-
-  if (
-    location.pathname === "/noteDetails/49" ||
-    location.pathname === "/noteDetails/22"
-  ) {
+  // Public paths always render
+  if (PUBLIC_PATHS.includes(location.pathname)) {
     return <>{children}</>;
   }
 
-  if (authKey !== "294") {
+  // Show nothing while checking authentication
+  if (isAuthenticated === null || !isAuthenticated) {
     return null;
   }
 
