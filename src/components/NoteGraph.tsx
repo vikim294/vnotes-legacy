@@ -347,13 +347,28 @@ const NoteGraph = memo<NoteGraphProps>(
       onExitEdit();
     };
 
-    const resetZoom = () => {
-      setViewport((prev) => ({
-        ...prev,
-        width: paperSize.width,
-        height: paperSize.height,
-        zoom: 1,
-      }));
+    const resetView = () => {
+      const firstRootNode = flatTree.find((node) => node.pid === null) as
+        | NodeData
+        | undefined;
+
+      if (firstRootNode) {
+        setViewport((prev) => ({
+          ...prev,
+          width: paperSize.width,
+          height: paperSize.height,
+          zoom: 1,
+          x: firstRootNode.x - paperSize.width / 2,
+          y: firstRootNode.y - paperSize.height / 2,
+        }));
+      } else {
+        setViewport((prev) => ({
+          ...prev,
+          width: paperSize.width,
+          height: paperSize.height,
+          zoom: 1,
+        }));
+      }
     };
 
     const handleNodeEdit = () => {
@@ -847,10 +862,10 @@ const NoteGraph = memo<NoteGraphProps>(
           <div className="text-surface fixed top-0 right-0">
             {viewport.zoom !== 1 && (
               <button
-                onClick={resetZoom}
+                onClick={resetView}
                 className="hover:text-primary cursor-pointer transition-colors"
               >
-                {viewport.zoom.toFixed(2)} reset zoom
+                {viewport.zoom.toFixed(2)} reset view
               </button>
             )}
           </div>
