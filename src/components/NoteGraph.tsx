@@ -83,6 +83,7 @@ const NoteGraph = memo<NoteGraphProps>(
 
     // edit mode
     const [editMode, setEditMode] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
     const [nodeMenuVisible, setNodeMenuVisible] = useState(false);
     const nodeMenuRef = useRef<NodeMenuExpose | null>(null);
     const [selectedNodeId, setSelectedNodeId] = useState<
@@ -212,7 +213,9 @@ const NoteGraph = memo<NoteGraphProps>(
     };
 
     const handleSaveEdit = async () => {
-      // console.log("save edit:", flatTree);
+      setIsSaving(true);
+      try {
+        // console.log("save edit:", flatTree);
 
       // added 新增的结点
       // 必有 uuid，无 id，无视 id
@@ -334,6 +337,9 @@ const NoteGraph = memo<NoteGraphProps>(
         setFlatTree(newFlatTree);
         setEditMode(false);
       }
+    } finally {
+      setIsSaving(false);
+    }
     };
 
     const handleExitEdit = () => {
@@ -871,18 +877,20 @@ const NoteGraph = memo<NoteGraphProps>(
                 </Button>
               </div> */}
 
-              <div>
-                <Button
-                  className="block w-full"
-                  onClick={() => {
-                    const newValue = !browseMode;
+              {!isSaving && (
+                <div>
+                  <Button
+                    className="block w-full"
+                    onClick={() => {
+                      const newValue = !browseMode;
 
-                    setBrowseMode(newValue);
-                  }}
-                >
-                  {browseMode ? "select mode" : "browse mode"}
-                </Button>
-              </div>
+                      setBrowseMode(newValue);
+                    }}
+                  >
+                    {browseMode ? "select mode" : "browse mode"}
+                  </Button>
+                </div>
+              )}
 
               {/* edit mode */}
               {!editMode && (
@@ -893,19 +901,23 @@ const NoteGraph = memo<NoteGraphProps>(
 
               {editMode && (
                 <>
+                  {!isSaving && (
+                    <div>
+                      <Button className="block w-full" type="secondary" onClick={handleAddNewNode}>
+                        add new node
+                      </Button>
+                    </div>
+                  )}
                   <div>
-                    <Button className="block w-full" type="secondary" onClick={handleAddNewNode}>
-                      add new node
+                    <Button className="block w-full" type="primary" onClick={handleSaveEdit} disabled={isSaving}>
+                      {isSaving ? 'saving...' : 'save'}
                     </Button>
                   </div>
-                  <div>
-                    <Button className="block w-full" type="primary" onClick={handleSaveEdit}>
-                      save
-                    </Button>
-                  </div>
-                  <div>
-                    <Button className="block w-full" onClick={handleExitEdit}>exit</Button>
-                  </div>
+                  {!isSaving && (
+                    <div>
+                      <Button className="block w-full" onClick={handleExitEdit}>exit</Button>
+                    </div>
+                  )}
                 </>
               )}
             </div>
