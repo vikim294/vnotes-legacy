@@ -23,7 +23,7 @@ import {
   type NodeData,
   type NoteDetailData,
 } from "../types";
-import { API_BASE_URL } from "../api";
+import { API_BASE_URL, verifyToken } from "../api";
 import FilePicker from "./FilePicker";
 
 interface GestureInfo {
@@ -188,11 +188,19 @@ const NoteGraph = memo<NoteGraphProps>(
       ],
     );
 
-    // Authorization check function
-    const isAuthorized = useMemo(() => {
-      // Check if user has valid auth key
-      const authKey = localStorage.getItem("vnote");
-      return authKey === "294";
+    // Authorization state - verified asynchronously with backend
+    const [isAuthorized, setIsAuthorized] = useState(false);
+    useEffect(() => {
+      const checkAuth = async () => {
+        const storedToken = localStorage.getItem("vnote");
+        if (storedToken) {
+          const valid = await verifyToken(storedToken);
+          setIsAuthorized(valid);
+        } else {
+          setIsAuthorized(false);
+        }
+      };
+      checkAuth();
     }, []);
 
     const handleAddNewNode = () => {
