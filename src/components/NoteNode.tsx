@@ -12,6 +12,7 @@ import type { Size } from "../types/note";
 import { useNavigate } from "react-router";
 import type { NodeData } from "../types";
 import { getImageNodeUrl } from "../utils";
+import { Toast } from "../components/Toast";
 
 const createNodeMenuEvent = (detail: {
   nodeId: number | string;
@@ -102,14 +103,14 @@ export default function NoteNode({
     if (isChoosingParent) {
       // 检查是否选择了自身作为父节点
       if (id === selectedNodeId) {
-        alert("new parent node cannot be itself!");
+        Toast.error("new parent node cannot be itself!");
         return;
       }
       // 检查是否选择了子孙节点作为父节点
       if (flatTree && selectedNodeId) {
         const descendants = findDescendantsByIdInFlatTree(flatTree, selectedNodeId);
         if (descendants.some((node) => node.id === id)) {
-          alert("new parent node cannot be its descendant!");
+          Toast.error("new parent node cannot be its descendant!");
           return;
         }
       }
