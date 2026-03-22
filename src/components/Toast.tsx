@@ -4,10 +4,10 @@ import { createRoot } from "react-dom/client";
 type ToastType = "info" | "error" | "success" | "warning";
 
 export class Toast {
-  static show(msg: string, type?: ToastType = "info") {
+  static show(msg: string, type: ToastType = "info") {
     // 给body添加一个toast 元素，3秒后销毁
 
-    // 创建容器
+    // 创建容器（className 用于调试时识别 toast 元素）
     const container = document.createElement("div");
     container.className = "toast-wrapper";
     document.body.appendChild(container);
@@ -42,26 +42,27 @@ interface ToastCompProps {
 }
 const ToastComp = ({ msg, type, onClose }: ToastCompProps) => {
   useEffect(() => {
-    setTimeout(onClose, 3000);
+    const timer = setTimeout(onClose, 3000);
+    return () => clearTimeout(timer);
   }, [onClose]);
 
   let bgClassName = "";
 
   switch (type) {
     case "info":
-      bgClassName = "bg-node ";
+      bgClassName = "bg-node";
       break;
 
     case "error":
-      bgClassName = "bg-error ";
+      bgClassName = "bg-error";
       break;
 
     case "success":
-      bgClassName = "bg-success ";
+      bgClassName = "bg-success";
       break;
 
     case "warning":
-      bgClassName = "bg-warning ";
+      bgClassName = "bg-warning";
       break;
 
     default:
@@ -70,7 +71,7 @@ const ToastComp = ({ msg, type, onClose }: ToastCompProps) => {
 
   return (
     <div
-      className={`${bgClassName} fixed top-10 left-1/2 -translate-x-1/2 rounded-lg px-3 py-2 text-white`}
+      className={`${bgClassName} fixed top-10 left-1/2 -translate-x-1/2 rounded-lg px-3 py-2 text-white z-[100]`}
     >
       {msg}
     </div>
