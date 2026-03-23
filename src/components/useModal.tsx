@@ -36,7 +36,7 @@ export default function useModal({ onModalVisible }: UseModalProps = {}) {
           onPointerDown={closeOnClickMask ? closeModal : undefined}
         >
           <div
-            className={`bg-surface-900 border-surface-700 w-full max-w-full rounded-xl border shadow-2xl`}
+            className={`h-fit max-h-full overflow-y-auto bg-surface-900 border-surface-700 w-full max-w-full rounded-xl border shadow-2xl`}
             style={{ width: width ?? 400 }}
             onPointerDown={(e) => e.stopPropagation()}
           >
@@ -47,7 +47,7 @@ export default function useModal({ onModalVisible }: UseModalProps = {}) {
                 </h3>
               </div>
             )}
-            <div className="px-6 py-4 text-slate-200" style={{ maxHeight: '60vh', overflowY: "auto" }}>
+            <div className="px-6 py-4 text-slate-200">
               {children}
             </div>
             {footer && (

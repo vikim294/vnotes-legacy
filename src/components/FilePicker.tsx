@@ -17,5 +17,5 @@ export default function FilePicker({ handleFileChange }: FilePickerProps) {
     }
   }, []);
 
-  return <input ref={inputRef} type="file" onChange={handleFileChange} />;
+  return <input ref={inputRef} type="file" className="max-w-full" onChange={handleFileChange} />;
 }

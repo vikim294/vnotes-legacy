@@ -847,7 +847,7 @@ const NoteGraph = memo<NoteGraphProps>(
 
     return (
       <PaperContext value={paperContext}>
-        <div className="h-screen bg-black">
+        <div className="h-full bg-black">
           <svg
             ref={paperRef}
             width={paperSize.width}
