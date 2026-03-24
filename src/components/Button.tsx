@@ -18,7 +18,7 @@ export default function Button({
   disabled = false,
 }: ButtonProps) {
   // Base button styles with enhanced theming
-  const baseStyles = "inline-flex items-center justify-center cursor-pointer px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 select-none focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900";
+  const baseStyles = "inline-flex items-center justify-center cursor-pointer px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 select-none focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 whitespace-nowrap";
   
   // Type-specific styles with the new color palette
   const typeStyles = {
