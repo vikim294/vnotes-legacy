@@ -3,7 +3,9 @@ import Button from "./Button";
 import {
   use,
   useImperativeHandle,
+  useLayoutEffect,
   useMemo,
+  useRef,
   useState,
   type Dispatch,
   type SetStateAction,
@@ -71,6 +73,7 @@ export default function NodeMenu({
   const graphType = paperContext?.graphType;
   const flatTree = paperContext?.flatTree;
   const selectedNodeId = paperContext?.selectedNodeId;
+  const nodemenuElRef = useRef<HTMLDivElement | null>(null) 
   
   /**
    * 根据 selectedNodeId 从 flatTree 中查找当前选中的节点
@@ -98,6 +101,36 @@ export default function NodeMenu({
     [],
   );
 
+  useLayoutEffect(() => {
+    if (nodemenuElRef.current) {
+      const menuRect = nodemenuElRef.current.getBoundingClientRect();
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      const padding = 8; // 视口边缘留白
+
+      let adjustedX = position.x;
+      let adjustedY = position.y;
+
+      // 检测右边界溢出
+      if (position.x + menuRect.width > viewportWidth - padding) {
+        adjustedX = viewportWidth - menuRect.width - padding;
+      }
+
+      // 检测下边界溢出
+      if (position.y + menuRect.height > viewportHeight - padding) {
+        adjustedY = viewportHeight - menuRect.height - padding;
+      }
+
+      // 确保不会超出左上角
+      adjustedX = Math.max(padding, adjustedX);
+      adjustedY = Math.max(padding, adjustedY);
+
+      // 直接更新 DOM，避免 setState 导致的级联渲染
+      nodemenuElRef.current.style.left = `${adjustedX}px`;
+      nodemenuElRef.current.style.top = `${adjustedY}px`;
+    }
+  }, [position]);
+
   // 菜单不可见时不渲染任何内容
   if (!visible) return null;
 
@@ -112,6 +145,7 @@ export default function NodeMenu({
         className={`bg-plain fixed`}
         style={{ top: position.y, left: position.x }}
         onPointerDown={(e) => e.stopPropagation()} // 阻止事件冒泡，防止点击菜单时关闭
+        ref={nodemenuElRef}
       >
         {/* 编辑节点内容 */}
         <Button className="block w-full" onClick={onEdit}>
