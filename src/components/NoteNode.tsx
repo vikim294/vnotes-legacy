@@ -17,6 +17,8 @@ import { Toast } from "../components/Toast";
 const createNodeMenuEvent = (detail: {
   nodeId: number | string;
   source: "longtap" | "contextmenu";
+  x: number;
+  y: number;
 }) => {
   return new CustomEvent("nodemenu", {
     bubbles: true,
@@ -95,6 +97,8 @@ export default function NoteNode({
       createNodeMenuEvent({
         nodeId: id,
         source: "contextmenu",
+        x: e.clientX,
+        y: e.clientY,
       }),
     );
   };
@@ -108,7 +112,10 @@ export default function NoteNode({
       }
       // 检查是否选择了子孙节点作为父节点
       if (flatTree && selectedNodeId) {
-        const descendants = findDescendantsByIdInFlatTree(flatTree, selectedNodeId);
+        const descendants = findDescendantsByIdInFlatTree(
+          flatTree,
+          selectedNodeId,
+        );
         if (descendants.some((node) => node.id === id)) {
           Toast.error("new parent node cannot be its descendant!");
           return;
@@ -161,6 +168,8 @@ export default function NoteNode({
         createNodeMenuEvent({
           nodeId: id,
           source: "longtap",
+          x: e.clientX,
+          y: e.clientY,
         }),
       );
     }, 500);
@@ -298,18 +307,16 @@ export default function NoteNode({
       e: CustomEvent<{
         nodeId: number;
         source: "longtap" | "contextmenu";
+        x: number;
+        y: number;
       }>,
     ) => {
       // console.log("node menu", e);
-      const { left, top, width } = (
-        e.target as SVGGElement
-      ).getBoundingClientRect();
-
       setSelectedNodeId?.(e.detail.nodeId);
 
       nodeMenuRef?.current?.setPosition({
-        x: left + width + 12,
-        y: top,
+        x: e.detail.x,
+        y: e.detail.y,
       });
       setNodeMenuVisible?.(true);
     };
