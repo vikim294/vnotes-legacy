@@ -161,6 +161,13 @@ const NoteGraph = memo<NoteGraphProps>(
       closeModal: closeNodeDeleteConfirmModal,
     } = useModal();
 
+    // exit confirmation modal
+    const {
+      Modal: ExitConfirmModal,
+      openModal: openExitConfirmModal,
+      closeModal: closeExitConfirmModal,
+    } = useModal();
+
     // context
     const paperContext = useMemo(
       () => ({
@@ -343,6 +350,21 @@ const NoteGraph = memo<NoteGraphProps>(
     };
 
     const handleExitEdit = () => {
+      // Check if there are any unsaved modifications
+      const hasModifications = flatTree.some(
+        (node) => node.nodeType === "new" || node.nodeType === "edited" || node.nodeType === "deleted"
+      );
+
+      if (hasModifications) {
+        openExitConfirmModal();
+      } else {
+        setEditMode(false);
+        onExitEdit();
+      }
+    };
+
+    const handleConfirmExit = () => {
+      closeExitConfirmModal();
       setEditMode(false);
       onExitEdit();
     };
@@ -1190,6 +1212,23 @@ const NoteGraph = memo<NoteGraphProps>(
                 </div>
               }
             ></NodeDeleteConfirmModal>
+
+            <ExitConfirmModal
+              header="确认退出编辑？"
+              footer={
+                <div className="flex justify-end gap-2">
+                  <Button onClick={closeExitConfirmModal}>取消</Button>
+                  <Button type="danger" onClick={handleConfirmExit}>
+                    确认退出
+                  </Button>
+                </div>
+              }
+            >
+              <p>您有未保存的修改，退出后将丢失所有更改。</p>
+              <p className="mt-2 text-sm text-slate-400">
+                包括：新增节点、编辑内容、删除节点、位置移动、标记更改等
+              </p>
+            </ExitConfirmModal>
           </>
         </div>
       </PaperContext>
