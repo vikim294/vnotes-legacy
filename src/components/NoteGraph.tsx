@@ -52,7 +52,7 @@ interface NoteGraphProps {
   onExitEdit: () => void;
 }
 
-const VIEWPORT_STORAGE_KEY = 'vnote-directory-viewport';
+const VIEWPORT_STORAGE_KEY = "vnote-directory-viewport";
 
 const loadViewportState = () => {
   try {
@@ -66,7 +66,11 @@ const loadViewportState = () => {
   return null;
 };
 
-const saveViewportState = (viewport: { x: number; y: number; zoom: number }) => {
+const saveViewportState = (viewport: {
+  x: number;
+  y: number;
+  zoom: number;
+}) => {
   try {
     localStorage.setItem(VIEWPORT_STORAGE_KEY, JSON.stringify(viewport));
   } catch {
@@ -105,12 +109,13 @@ const NoteGraph = memo<NoteGraphProps>(
 
     // Debounced save for zoom operations (pinch/zoom and wheel)
     const debouncedSaveViewport = useMemo(
-      () => debounce((x: number, y: number, zoom: number) => {
-        if (graphType === 'directory') {
-          saveViewportState({ x, y, zoom });
-        }
-      }, 300),
-      [graphType]
+      () =>
+        debounce<{ x: number; y: number; zoom: number }>(({ x, y, zoom }) => {
+          if (graphType === "directory") {
+            saveViewportState({ x, y, zoom });
+          }
+        }, 300),
+      [graphType],
     );
 
     // const [isAllExpanded, setIsAllExpand] = useState(true);
@@ -411,7 +416,7 @@ const NoteGraph = memo<NoteGraphProps>(
 
     const resetView = () => {
       // Clear cached viewport for directory
-      if (graphType === 'directory') {
+      if (graphType === "directory") {
         localStorage.removeItem(VIEWPORT_STORAGE_KEY);
       }
 
@@ -712,21 +717,6 @@ const NoteGraph = memo<NoteGraphProps>(
       };
     }, []);
 
-    // Load cached viewport for directory page
-    useEffect(() => {
-      if (graphType !== 'directory') return;
-
-      const cached = loadViewportState();
-      if (cached && cached.x !== undefined && cached.y !== undefined && cached.zoom !== undefined) {
-        setViewport(prev => ({
-          ...prev,
-          x: cached.x,
-          y: cached.y,
-          zoom: cached.zoom,
-        }));
-      }
-    }, [graphType]);
-
     // panning and pinch & zoom
     useEffect(() => {
       const paperEl = paperRef.current;
@@ -827,20 +817,19 @@ const NoteGraph = memo<NoteGraphProps>(
             height: paperSize.height * newZoom,
             zoom: newZoom,
           });
-
-          debouncedSaveViewport(
-            gestureData.viewportStartX + deltaX,
-            gestureData.viewportStartY + deltaY,
-            newZoom
-          );
         }
       };
 
       const onPointerUp = () => {
-        if (gestureData.type === "panning") {
+        if (
+          (gestureData.type === "panning" ||
+            gestureData.type === "pinchAndZoom") &&
+          graphType === "directory"
+        ) {
           const v = viewportRef.current;
           saveViewportState({ x: v.x, y: v.y, zoom: v.zoom });
         }
+
         gestureData.type = "none";
       };
 
@@ -871,7 +860,7 @@ const NoteGraph = memo<NoteGraphProps>(
         paperEl?.removeEventListener("pointermove", onPointerMove);
         paperEl?.removeEventListener("pointerup", onPointerUp);
       };
-    }, [paperSize, editMode, browseMode, debouncedSaveViewport]);
+    }, [graphType, paperSize, editMode, browseMode, debouncedSaveViewport]);
 
     // zooming
     useEffect(() => {
@@ -903,7 +892,13 @@ const NoteGraph = memo<NoteGraphProps>(
           const newX = prev.x + deltaX;
           const newY = prev.y + deltaY;
 
-          debouncedSaveViewport(newX, newY, newZoom);
+          if (graphType === "directory") {
+            debouncedSaveViewport({
+              x: newX,
+              y: newY,
+              zoom: newZoom
+            });
+          }
 
           return {
             x: newX,
@@ -920,8 +915,9 @@ const NoteGraph = memo<NoteGraphProps>(
       return () => {
         paperEl?.removeEventListener("wheel", onWheel);
       };
-    }, [paperSize, debouncedSaveViewport]);
+    }, [graphType, paperSize, debouncedSaveViewport]);
 
+    // init viewport
     useEffect(() => {
       if (hasMountedRef.current) return;
 
@@ -932,13 +928,33 @@ const NoteGraph = memo<NoteGraphProps>(
           (node) => node.pid === null,
         ) as NodeData;
 
+        if (graphType === "directory") {
+          const cached = loadViewportState();
+          if (
+            cached &&
+            cached.x !== undefined &&
+            cached.y !== undefined &&
+            cached.zoom !== undefined
+          ) {
+            setViewport((prev) => ({
+              ...prev,
+              x: cached.x,
+              y: cached.y,
+              zoom: cached.zoom,
+              width: paperSize.width * cached.zoom,
+              height: paperSize.height * cached.zoom,
+            }));
+            return;
+          }
+        }
+
         setViewport((prev) => ({
           ...prev,
           x: firstRootNode.x - viewport.width / 2,
           y: firstRootNode.y - viewport.height / 2,
         }));
       }
-    }, [flatTree, viewport.width, viewport.height]);
+    }, [graphType, paperSize, flatTree, viewport.width, viewport.height]);
 
     return (
       <PaperContext value={paperContext}>

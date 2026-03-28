@@ -95,21 +95,21 @@ export const getDistanceBetweenTwoPoints = (p1: Point, p2: Point) => {
 
 export const handleTapEnter = (cb: () => void) => {
   return (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    if(e.key === 'Enter' && !e.shiftKey) {
-      cb()
+    if (e.key === "Enter" && !e.shiftKey) {
+      cb();
     }
-  }
-}
+  };
+};
 
 export const noop = () => {};
 
-export function debounce<T extends (...args: unknown[]) => void>(
-  func: T,
-  wait: number
-): (...args: Parameters<T>) => void {
+export function debounce<T>(
+  func: (args: T) => void,
+  wait: number,
+): (args: T) => void {
   let timeout: ReturnType<typeof setTimeout> | null = null;
-  return (...args) => {
+  return (args) => {
     if (timeout) clearTimeout(timeout);
-    timeout = setTimeout(() => func(...args), wait);
+    timeout = setTimeout(() => func(args), wait);
   };
 }
