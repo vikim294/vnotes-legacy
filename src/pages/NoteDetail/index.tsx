@@ -24,6 +24,8 @@ function NoteDetail() {
           ...node,
           x: Number(node.x),
           y: Number(node.y),
+          imageWidth: Number(node.imageWidth),
+          imageHeight: Number(node.imageHeight),
         })),
       );
     }
