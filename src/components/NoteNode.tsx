@@ -535,6 +535,7 @@ function NodeLabel({ label, marked, isDetail, size, setSize }: NodeLabelProps) {
                   href={segment.content}
                   target="_blank"
                   rel="noopener noreferrer"
+                  // @ts-expect-error tslint doesn't recognize <a> in SVG
                   dominantBaseline="central"
                   fill="#60a5fa"
                   style={{
