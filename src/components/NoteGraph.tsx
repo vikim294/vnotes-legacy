@@ -10,6 +10,7 @@ import {
 import { v4 as uuidv4 } from "uuid";
 import { ArrowLeft } from "lucide-react";
 import {
+  debounce,
   findDescendantsByIdInFlatTree,
   getDistanceBetweenTwoPoints,
 } from "../lib";
@@ -51,6 +52,28 @@ interface NoteGraphProps {
   onExitEdit: () => void;
 }
 
+const VIEWPORT_STORAGE_KEY = 'vnote-directory-viewport';
+
+const loadViewportState = () => {
+  try {
+    const stored = localStorage.getItem(VIEWPORT_STORAGE_KEY);
+    if (stored) {
+      return JSON.parse(stored);
+    }
+  } catch {
+    // Ignore parse errors
+  }
+  return null;
+};
+
+const saveViewportState = (viewport: { x: number; y: number; zoom: number }) => {
+  try {
+    localStorage.setItem(VIEWPORT_STORAGE_KEY, JSON.stringify(viewport));
+  } catch {
+    // Ignore storage errors
+  }
+};
+
 const NoteGraph = memo<NoteGraphProps>(
   ({ graphType, noteTitle, noteDetail, flatTree, setFlatTree, onExitEdit }) => {
     const navigate = useNavigate();
@@ -79,6 +102,16 @@ const NoteGraph = memo<NoteGraphProps>(
       viewportStartY: 0,
       viewportStartZoom: 1,
     });
+
+    // Debounced save for zoom operations (pinch/zoom and wheel)
+    const debouncedSaveViewport = useMemo(
+      () => debounce((x: number, y: number, zoom: number) => {
+        if (graphType === 'directory') {
+          saveViewportState({ x, y, zoom });
+        }
+      }, 300),
+      [graphType]
+    );
 
     // const [isAllExpanded, setIsAllExpand] = useState(true);
 
@@ -377,6 +410,11 @@ const NoteGraph = memo<NoteGraphProps>(
     };
 
     const resetView = () => {
+      // Clear cached viewport for directory
+      if (graphType === 'directory') {
+        localStorage.removeItem(VIEWPORT_STORAGE_KEY);
+      }
+
       const firstRootNode = flatTree.find((node) => node.pid === null) as
         | NodeData
         | undefined;
@@ -674,6 +712,21 @@ const NoteGraph = memo<NoteGraphProps>(
       };
     }, []);
 
+    // Load cached viewport for directory page
+    useEffect(() => {
+      if (graphType !== 'directory') return;
+
+      const cached = loadViewportState();
+      if (cached && cached.x !== undefined && cached.y !== undefined && cached.zoom !== undefined) {
+        setViewport(prev => ({
+          ...prev,
+          x: cached.x,
+          y: cached.y,
+          zoom: cached.zoom,
+        }));
+      }
+    }, [graphType]);
+
     // panning and pinch & zoom
     useEffect(() => {
       const paperEl = paperRef.current;
@@ -774,10 +827,20 @@ const NoteGraph = memo<NoteGraphProps>(
             height: paperSize.height * newZoom,
             zoom: newZoom,
           });
+
+          debouncedSaveViewport(
+            gestureData.viewportStartX + deltaX,
+            gestureData.viewportStartY + deltaY,
+            newZoom
+          );
         }
       };
 
       const onPointerUp = () => {
+        if (gestureData.type === "panning") {
+          const v = viewportRef.current;
+          saveViewportState({ x: v.x, y: v.y, zoom: v.zoom });
+        }
         gestureData.type = "none";
       };
 
@@ -808,7 +871,7 @@ const NoteGraph = memo<NoteGraphProps>(
         paperEl?.removeEventListener("pointermove", onPointerMove);
         paperEl?.removeEventListener("pointerup", onPointerUp);
       };
-    }, [paperSize, editMode, browseMode]);
+    }, [paperSize, editMode, browseMode, debouncedSaveViewport]);
 
     // zooming
     useEffect(() => {
@@ -837,9 +900,14 @@ const NoteGraph = memo<NoteGraphProps>(
           const deltaX = paperSize.width * -(newZoom - zoom) * ratioX;
           const deltaY = paperSize.height * -(newZoom - zoom) * ratioY;
 
+          const newX = prev.x + deltaX;
+          const newY = prev.y + deltaY;
+
+          debouncedSaveViewport(newX, newY, newZoom);
+
           return {
-            x: prev.x + deltaX,
-            y: prev.y + deltaY,
+            x: newX,
+            y: newY,
             width: paperSize.width * newZoom,
             height: paperSize.height * newZoom,
             zoom: newZoom,
@@ -852,7 +920,7 @@ const NoteGraph = memo<NoteGraphProps>(
       return () => {
         paperEl?.removeEventListener("wheel", onWheel);
       };
-    }, [paperSize]);
+    }, [paperSize, debouncedSaveViewport]);
 
     useEffect(() => {
       if (hasMountedRef.current) return;
