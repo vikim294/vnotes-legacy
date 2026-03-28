@@ -366,7 +366,7 @@ const NoteGraph = memo<NoteGraphProps>(
         openExitConfirmModal();
       } else {
         setEditMode(false);
-        onExitEdit();
+        // No modifications, no need to refetch data
       }
     };
 
