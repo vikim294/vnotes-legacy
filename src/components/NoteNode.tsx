@@ -419,7 +419,7 @@ const PADDING_Y = 10;
 const TEXT_HEIGHT = 20.5;
 
 interface TextSegment {
-  type: 'text' | 'link';
+  type: "text" | "link";
   content: string;
 }
 
@@ -433,14 +433,14 @@ const parseTextForLinks = (text: string): TextSegment[] => {
     // Add text before the URL
     if (match.index > lastIndex) {
       segments.push({
-        type: 'text',
-        content: text.slice(lastIndex, match.index)
+        type: "text",
+        content: text.slice(lastIndex, match.index),
       });
     }
     // Add the URL
     segments.push({
-      type: 'link',
-      content: match[0]
+      type: "link",
+      content: match[0],
     });
     lastIndex = match.index + match[0].length;
   }
@@ -448,8 +448,8 @@ const parseTextForLinks = (text: string): TextSegment[] => {
   // Add remaining text after last URL
   if (lastIndex < text.length) {
     segments.push({
-      type: 'text',
-      content: text.slice(lastIndex)
+      type: "text",
+      content: text.slice(lastIndex),
     });
   }
 
@@ -518,7 +518,9 @@ function NodeLabel({ label, marked, isDetail, size, setSize }: NodeLabelProps) {
             }}
             x={size.width / -2 + PADDING_X / 2}
             y={0}
-            dy={index * TEXT_HEIGHT + ((textList.length - 1) * TEXT_HEIGHT) / -2}
+            dy={
+              index * TEXT_HEIGHT + ((textList.length - 1) * TEXT_HEIGHT) / -2
+            }
             fill={marked ? "var(--color-node-marked)" : "white"}
             dominantBaseline="central"
             style={{ fontFamily: "monospace" }}
@@ -527,19 +529,27 @@ function NodeLabel({ label, marked, isDetail, size, setSize }: NodeLabelProps) {
             xmlSpace="preserve"
           >
             {segments.map((segment, segIndex) =>
-              segment.type === 'link' ? (
+              segment.type === "link" ? (
                 <a
                   key={segIndex}
                   href={segment.content}
                   target="_blank"
                   rel="noopener noreferrer"
-                  style={{ fill: '#60a5fa', textDecoration: 'underline', cursor: 'pointer' }}
+                  dominantBaseline="central"
+                  fill="#60a5fa"
+                  style={{
+                    textDecoration: "underline",
+                    cursor: browseMode ? "default" : "pointer",
+                    outline: "none",
+                  }}
                 >
                   {segment.content}
                 </a>
               ) : (
-                <tspan key={segIndex}>{segment.content}</tspan>
-              )
+                <tspan key={segIndex} dominantBaseline="central">
+                  {segment.content}
+                </tspan>
+              ),
             )}
           </text>
         );
@@ -643,7 +653,8 @@ function NodeImage({
         (moveEvent.clientY - resizeRef.current.startY) * (viewportZoom || 1);
 
       // Use Euclidean distance for more natural diagonal resizing
-      const delta = Math.sqrt(deltaX * deltaX + deltaY * deltaY) *
+      const delta =
+        Math.sqrt(deltaX * deltaX + deltaY * deltaY) *
         Math.sign(deltaX + deltaY);
 
       const newWidth = Math.max(50, resizeRef.current.startWidth + delta);
@@ -665,14 +676,8 @@ function NodeImage({
 
     const handleResizeEnd = () => {
       resizeRef.current.isResizing = false;
-      resizeHandle?.removeEventListener(
-        "pointermove",
-        handleResizeMove,
-      );
-      resizeHandle?.removeEventListener(
-        "pointerup",
-        handleResizeEnd,
-      );
+      resizeHandle?.removeEventListener("pointermove", handleResizeMove);
+      resizeHandle?.removeEventListener("pointerup", handleResizeEnd);
 
       // Update flatTree with new dimensions
       if (setFlatTree && flatTree) {
