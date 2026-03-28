@@ -213,7 +213,7 @@ export default function NoteNode({
   const handleDoubleClick = () => {
     if (!browseMode) {
       if (isDetail) {
-        navigate(`/noteDetails/${id}`);
+        navigate(`/noteDetails/${id}?label=${label}`);
       }
     }
 

@@ -42,6 +42,7 @@ interface GestureInfo {
 
 interface NoteGraphProps {
   graphType: "directory" | "detail";
+  noteTitle?: string;
   noteDetail?: NoteDetailData | null;
   flatTree: NodeData[];
   setFlatTree: React.Dispatch<React.SetStateAction<NodeData[]>>;
@@ -49,7 +50,7 @@ interface NoteGraphProps {
 }
 
 const NoteGraph = memo<NoteGraphProps>(
-  ({ graphType, noteDetail, flatTree, setFlatTree, onExitEdit }) => {
+  ({ graphType, noteTitle, noteDetail, flatTree, setFlatTree, onExitEdit }) => {
     const hasMountedRef = useRef(false);
 
     const [paperSize, setPaperSize] = useState({ width: 0, height: 0 });
@@ -224,135 +225,138 @@ const NoteGraph = memo<NoteGraphProps>(
       try {
         // console.log("save edit:", flatTree);
 
-      // added 新增的结点
-      // 必有 uuid，无 id，无视 id
-      // 如果是新增的子结点，则
-      //                     有 puuid（如果是新增结点的子结点）
-      //                     有 pid（如果是旧结点的新增子结点）
-      // updated 旧结点
-      //     必有 id，无视 uuid
-      //     如果旧结点只更新了除 pid 之外的数据，pid 没变
-      //     如果旧结点更新了 pid 为 某个旧结点的 id
-      //     如果旧结点更新了 pid 为 某个新结点的 uuid
+        // added 新增的结点
+        // 必有 uuid，无 id，无视 id
+        // 如果是新增的子结点，则
+        //                     有 puuid（如果是新增结点的子结点）
+        //                     有 pid（如果是旧结点的新增子结点）
+        // updated 旧结点
+        //     必有 id，无视 uuid
+        //     如果旧结点只更新了除 pid 之外的数据，pid 没变
+        //     如果旧结点更新了 pid 为 某个旧结点的 id
+        //     如果旧结点更新了 pid 为 某个新结点的 uuid
 
-      // 保存本次编辑结果到后端 API
-      const added: NodeData[] = [];
-      const updated: NodeData[] = [];
-      const deletedNodeIds: (number | string)[] = [];
+        // 保存本次编辑结果到后端 API
+        const added: NodeData[] = [];
+        const updated: NodeData[] = [];
+        const deletedNodeIds: (number | string)[] = [];
 
-      for (const node of flatTree) {
-        if (node.nodeType === "new") {
-          if (node.puuid !== null) {
-            // 是新增结点的新增子结点，要把 pid 置为 null
-            added.push({
-              ...node,
-              pid: null,
-            });
-          } else if (node.contentType === "image") {
-            added.push({
-              ...node,
-              // 无需传
-              isTempImageUrl: undefined,
-              imageUrl: undefined,
-            });
-          } else {
-            added.push(node);
-          }
-        } else if (node.nodeType === "edited") {
-          if (node.contentType === "image") {
-            updated.push({
-              ...node,
-              // 无需传
-              isTempImageUrl: undefined,
-              imageUrl: undefined,
-            });
-          } else {
-            updated.push(node);
-          }
-        } else if (node.nodeType === "deleted") {
-          deletedNodeIds.push(node.id);
-        }
-      }
-
-      const params: {
-        added: NodeData[];
-        updated: NodeData[];
-        deletedNodeIds: (number | string)[];
-        noteDetailId?: number;
-      } = {
-        added,
-        updated,
-        deletedNodeIds,
-      };
-
-      if (graphType === "detail") {
-        params.noteDetailId = noteDetail?.id;
-      }
-
-      const url =
-        graphType === "directory"
-          ? `${API_BASE_URL}/notes/update`
-          : `${API_BASE_URL}/noteNodes/update`;
-
-      // console.log(added, updated, deletedNodeIds);
-
-      const fd = new FormData();
-      fd.append("params", JSON.stringify(params));
-      for (const [uuid, file] of Object.entries(uuidToFileMapRef.current)) {
-        fd.append(uuid, file);
-      }
-      for (const [id, file] of Object.entries(idToFileMapRef.current)) {
-        fd.append(id, file);
-      }
-
-      const response = await fetch(url, {
-        method: "POST",
-        body: fd,
-      });
-      const res = await response.json();
-      if (res.code === 0) {
-        // reset
-        uuidToFileMapRef.current = {};
-        idToFileMapRef.current = {};
-
-        // 根据返回结果，更新 flatTree
-        const newFlatTree = [];
-
-        // added -> update id, pid
-        // updated -> update pid
-        // deleted -> remove from flatTree
-
-        for (const item of flatTree) {
-          if (deletedNodeIds.includes(item.id)) {
-            continue;
-          } else {
-            // reset nodeType
-            const newItem: NodeData = { ...item, nodeType: undefined };
-
-            if (res.data.uuidToId[item.id]) {
-              newItem.id = res.data.uuidToId[item.id];
+        for (const node of flatTree) {
+          if (node.nodeType === "new") {
+            if (node.puuid !== null) {
+              // 是新增结点的新增子结点，要把 pid 置为 null
+              added.push({
+                ...node,
+                pid: null,
+              });
+            } else if (node.contentType === "image") {
+              added.push({
+                ...node,
+                // 无需传
+                isTempImageUrl: undefined,
+                imageUrl: undefined,
+              });
+            } else {
+              added.push(node);
             }
-
-            if (item.pid && res.data.uuidToId[item.pid]) {
-              newItem.pid = res.data.uuidToId[item.pid];
+          } else if (node.nodeType === "edited") {
+            if (node.contentType === "image") {
+              updated.push({
+                ...node,
+                // 无需传
+                isTempImageUrl: undefined,
+                imageUrl: undefined,
+              });
+            } else {
+              updated.push(node);
             }
-
-            newFlatTree.push(newItem);
+          } else if (node.nodeType === "deleted") {
+            deletedNodeIds.push(node.id);
           }
         }
 
-        setFlatTree(newFlatTree);
-        setEditMode(false);
+        const params: {
+          added: NodeData[];
+          updated: NodeData[];
+          deletedNodeIds: (number | string)[];
+          noteDetailId?: number;
+        } = {
+          added,
+          updated,
+          deletedNodeIds,
+        };
+
+        if (graphType === "detail") {
+          params.noteDetailId = noteDetail?.id;
+        }
+
+        const url =
+          graphType === "directory"
+            ? `${API_BASE_URL}/notes/update`
+            : `${API_BASE_URL}/noteNodes/update`;
+
+        // console.log(added, updated, deletedNodeIds);
+
+        const fd = new FormData();
+        fd.append("params", JSON.stringify(params));
+        for (const [uuid, file] of Object.entries(uuidToFileMapRef.current)) {
+          fd.append(uuid, file);
+        }
+        for (const [id, file] of Object.entries(idToFileMapRef.current)) {
+          fd.append(id, file);
+        }
+
+        const response = await fetch(url, {
+          method: "POST",
+          body: fd,
+        });
+        const res = await response.json();
+        if (res.code === 0) {
+          // reset
+          uuidToFileMapRef.current = {};
+          idToFileMapRef.current = {};
+
+          // 根据返回结果，更新 flatTree
+          const newFlatTree = [];
+
+          // added -> update id, pid
+          // updated -> update pid
+          // deleted -> remove from flatTree
+
+          for (const item of flatTree) {
+            if (deletedNodeIds.includes(item.id)) {
+              continue;
+            } else {
+              // reset nodeType
+              const newItem: NodeData = { ...item, nodeType: undefined };
+
+              if (res.data.uuidToId[item.id]) {
+                newItem.id = res.data.uuidToId[item.id];
+              }
+
+              if (item.pid && res.data.uuidToId[item.pid]) {
+                newItem.pid = res.data.uuidToId[item.pid];
+              }
+
+              newFlatTree.push(newItem);
+            }
+          }
+
+          setFlatTree(newFlatTree);
+          setEditMode(false);
+        }
+      } finally {
+        setIsSaving(false);
       }
-    } finally {
-      setIsSaving(false);
-    }
     };
 
     const handleExitEdit = () => {
       // Check if there are any unsaved modifications
       const hasModifications = flatTree.some(
-        (node) => node.nodeType === "new" || node.nodeType === "edited" || node.nodeType === "deleted"
+        (node) =>
+          node.nodeType === "new" ||
+          node.nodeType === "edited" ||
+          node.nodeType === "deleted",
       );
 
       if (hasModifications) {
@@ -477,9 +481,7 @@ const NoteGraph = memo<NoteGraphProps>(
         contentType: nodeContentType,
         isTempImageUrl: nodeContentType === "image" ? true : undefined,
         imageUrl:
-          nodeContentType === "image"
-            ? (tempFileUrl ?? undefined)
-            : undefined,
+          nodeContentType === "image" ? (tempFileUrl ?? undefined) : undefined,
       };
 
       if (nodeContentType === "image" && tempFileRef.current) {
@@ -881,13 +883,20 @@ const NoteGraph = memo<NoteGraphProps>(
           >
             <NoteTree flatTree={flatTree} />
           </svg>
-          <div className="text-surface fixed top-0 right-0">
+          {noteTitle && (
+            <div className="fixed top-0 left-0 select-none text-[#ffffff5c]">
+              {noteTitle}
+            </div>
+          )}
+
+          <div className="fixed top-0 right-0 select-none text-[#ffffff5c]">
             {viewport.zoom !== 1 && (
               <button
                 onClick={resetView}
                 className="hover:text-primary cursor-pointer transition-colors"
               >
-                {viewport.zoom.toFixed(2)} reset view
+                {/* {viewport.zoom.toFixed(2)}  */}
+                reset view
               </button>
             )}
           </div>
@@ -931,7 +940,11 @@ const NoteGraph = memo<NoteGraphProps>(
 
               {/* edit mode */}
               {!editMode && (
-                <Button className="block w-full" type="primary" onClick={() => setEditMode(true)}>
+                <Button
+                  className="block w-full"
+                  type="primary"
+                  onClick={() => setEditMode(true)}
+                >
                   edit mode
                 </Button>
               )}
@@ -940,19 +953,30 @@ const NoteGraph = memo<NoteGraphProps>(
                 <>
                   {!isSaving && (
                     <div>
-                      <Button className="block w-full" type="secondary" onClick={handleAddNewNode}>
+                      <Button
+                        className="block w-full"
+                        type="secondary"
+                        onClick={handleAddNewNode}
+                      >
                         add new node
                       </Button>
                     </div>
                   )}
                   <div>
-                    <Button className="block w-full" type="primary" onClick={handleSaveEdit} disabled={isSaving}>
-                      {isSaving ? 'saving...' : 'save'}
+                    <Button
+                      className="block w-full"
+                      type="primary"
+                      onClick={handleSaveEdit}
+                      disabled={isSaving}
+                    >
+                      {isSaving ? "saving..." : "save"}
                     </Button>
                   </div>
                   {!isSaving && (
                     <div>
-                      <Button className="block w-full" onClick={handleExitEdit}>exit</Button>
+                      <Button className="block w-full" onClick={handleExitEdit}>
+                        exit
+                      </Button>
                     </div>
                   )}
                 </>
@@ -1225,9 +1249,6 @@ const NoteGraph = memo<NoteGraphProps>(
               }
             >
               <p>您有未保存的修改，退出后将丢失所有更改。</p>
-              <p className="mt-2 text-sm text-slate-400">
-                包括：新增节点、编辑内容、删除节点、位置移动、标记更改等
-              </p>
             </ExitConfirmModal>
           </>
         </div>

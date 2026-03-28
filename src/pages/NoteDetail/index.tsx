@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { type NodeData, type NoteDetailData } from "../../types";
-import { useParams } from "react-router";
+import { useParams, useSearchParams } from "react-router";
 import { API_BASE_URL } from "../../api";
 import NoteGraph from "../../components/NoteGraph";
 
@@ -10,6 +10,8 @@ function NoteDetail() {
 
   // data related
   const { id: noteId } = useParams();
+  const [ searchParams ] = useSearchParams();
+  const noteTitle = searchParams.get("label") || "Untitled Note";
   const [noteDetail, setNoteDetail] = useState<NoteDetailData | null>(null);
 
   const getNoteDetail = async () => {
@@ -38,6 +40,7 @@ function NoteDetail() {
   return (
     <NoteGraph
       graphType="detail"
+      noteTitle={noteTitle}
       noteDetail={noteDetail}
       flatTree={flatTree}
       setFlatTree={setFlatTree}
