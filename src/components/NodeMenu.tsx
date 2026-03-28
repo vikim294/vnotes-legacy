@@ -1,4 +1,5 @@
 import { createPortal } from "react-dom";
+import { Trash2, Pencil, Plus, Link, Unlink, Bookmark } from "lucide-react";
 import Button from "./Button";
 import {
   use,
@@ -149,36 +150,52 @@ export default function NodeMenu({
       >
         {/* 编辑节点内容 */}
         <Button className="block w-full" onClick={onEdit}>
-          {
-            selectedNode?.contentType === "image" ? "change image" : "edit text"
-          }
+          <div className="flex items-center gap-2">
+            <Pencil className="h-4 w-4" />
+            {selectedNode?.contentType === "image" ? "change image" : "edit text"}
+          </div>
         </Button>
         {
           !selectedNode?.isDetail && (
             // 非 detail 节点才能新增子结点
             // detail 节点是叶子节点，不允许有子节点
             <Button className="block w-full" onClick={onAddChild}>
-              add child node
+              <div className="flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                add child node
+              </div>
             </Button>
           )
         }
         {/* 设置父节点 - 用于重新组织树的结构 */}
         <Button className="block w-full" onClick={onSetParent}>
-          set parent node
+          <div className="flex items-center gap-2">
+            <Link className="h-4 w-4" />
+            set parent node
+          </div>
         </Button>
         {/* 断开与父节点的连接 - 将节点变为根节点 */}
         <Button className="block w-full" onClick={onDisconnectFromParent}>
-          disconnect from parent
+          <div className="flex items-center gap-2">
+            <Unlink className="h-4 w-4" />
+            disconnect from parent
+          </div>
         </Button>
         {/* 标记功能 - 仅在 detail 视图中可用，且图片节点不支持标记 */}
         {graphType === "detail" && selectedNode?.contentType !== "image" && (
           <Button className="block w-full" onClick={onToggleMark}>
-            {selectedNode?.marked ? "unmark" : "mark"}
+            <div className="flex items-center gap-2">
+              <Bookmark className="h-4 w-4" />
+              {selectedNode?.marked ? "unmark" : "mark"}
+            </div>
           </Button>
         )}
         {/* 删除节点 - 危险操作，使用 danger 样式 */}
         <Button type="danger" className="block w-full" onClick={onDelete}>
-          delete
+          <div className="flex items-center gap-2">
+            <Trash2 className="h-4 w-4" />
+            delete
+          </div>
         </Button>
       </div>
     </div>,
