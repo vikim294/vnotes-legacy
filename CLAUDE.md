@@ -21,6 +21,7 @@ This is a React-based note-taking application with an interactive graph visualiz
 - Vite 7 for build tooling
 - Tailwind CSS 4 with custom theme variables
 - pnpm for package management
+- Lucide React - Icon library
 
 ### Application Structure
 
@@ -34,12 +35,18 @@ All routes except `/unauthorized` are wrapped in `AuthGuard` for authentication.
 ### Core Components
 
 - `NoteGraph.tsx` - Main graph visualization component using SVG. Handles panning, zooming, node rendering, and edit mode.
+  - **Viewport state caching**: Caches position (x, y) and zoom in localStorage for directory page
+  - **Reset view**: Resets zoom to 1 and centers on first root node, clears cached viewport
 - `NoteNode.tsx` - Renders individual nodes in the graph with support for text and image content.
+  - **Image resize**: In edit mode, drag blue handle on bottom-right to resize image (maintains aspect ratio)
+  - **Resize handle**: Visual size stays constant regardless of zoom (compensates for inverted zoom)
 - `NoteTree.tsx` - Renders tree connections (lines) between nodes.
-- `NodeMenu.tsx` - Context menu for node operations (add sibling, add child, edit, delete, set parent, disconnect, toggle mark).
+- `NodeMenu.tsx` - Context menu for node operations with Lucide icons:
+  - Pencil (edit), Plus (add child), Link (set parent), Unlink (disconnect)
+  - Bookmark (mark/unmark), Trash2 (delete)
 - `AuthGuard.tsx` - Authentication check wrapper with server-side token verification.
 - `Toast.tsx` - Toast notification system.
-- `Button.tsx` - Reusable button component with `disabled` prop support.
+- `Button.tsx` - Reusable button component with `disabled` prop and `whitespace-nowrap`.
 
 ### Data Model
 
@@ -58,6 +65,8 @@ interface NodeData {
   contentType?: "text" | "image";
   imageUrl?: string;
   isTempImageUrl?: boolean;
+  imageWidth?: number;    // custom image width (for resize)
+  imageHeight?: number;   // custom image height (for resize)
   marked?: boolean;
   isDetail?: boolean;
 }
@@ -75,6 +84,7 @@ The application uses a flat tree structure (`flatTree`) for rendering but mainta
 - `isChoosingParent`: State for parent selection mode
 - `flatTree`: Array of all nodes
 - `isSaving`: Loading state during save operations (hides other buttons, disables save)
+- `viewportZoom`: Current zoom level (inverted: higher = zoomed out, lower = zoomed in)
 
 ### Authentication
 
@@ -103,7 +113,15 @@ The app supports two graph types:
 Each graph supports:
 - **Browse mode**: Pan and zoom the canvas
 - **Edit mode**: Add, edit, delete, and move nodes; set parent relationships
-- **Reset view**: Resets zoom to 1 and centers on first root node (`pid === null`)
+- **Exit confirmation**: Shows modal if unsaved changes when exiting edit mode
+
+### Viewport State Caching (Directory Only)
+
+To preserve user's view position when navigating back from note details:
+- **Storage key**: `vnote-directory-viewport` in localStorage
+- **Cached on**: Pan/drag end (immediate), pinch/zoom and wheel (debounced 300ms)
+- **Loaded on**: Directory page mount
+- **Cleared on**: "Reset view" button click
 
 ### Utility Functions
 
@@ -112,6 +130,22 @@ Key helpers in `lib.tsx`:
 - `findDescendantsByIdInFlatTree()` - Find all child nodes recursively
 - `findAncestorsByIdInFlatTreeMap()` - Find all parent nodes recursively
 - `handleTapEnter()` - Keyboard handler for Enter key submissions
+- `debounce()` - Debounce function for performance optimization
+- `getDistanceBetweenTwoPoints()` - Calculate Euclidean distance between two points
+
+### Zoom Behavior
+
+**Inverted zoom logic**: Unlike standard zoom where higher value = zoomed in, this app uses:
+- Higher `viewportZoom` = zoomed out (see more of canvas)
+- Lower `viewportZoom` = zoomed in (closer view)
+- This affects coordinate calculations: multiply by zoom for screen→world conversion
+
+### Image Handling
+
+- Images can be resized in edit mode via bottom-right handle
+- Aspect ratio maintained using Euclidean distance of drag delta
+- Custom dimensions stored in `imageWidth`/`imageHeight` fields
+- Visual handle size compensated for zoom level
 
 ### Deployment
 
