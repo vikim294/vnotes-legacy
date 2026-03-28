@@ -242,6 +242,14 @@ export default function NoteNode({
 
     const onPointerDown = (e: PointerEvent) => {
       if (!editMode) return;
+      if (
+        e.target instanceof SVGRectElement &&
+        e.target.dataset.elType === "resize-handle"
+      ) {
+        // 点击了 resize handle，不触发拖动
+        return;
+      }
+
       positionData.isDragging = true;
       positionData.startX = e.clientX;
       positionData.startY = e.clientY;
@@ -400,7 +408,13 @@ export default function NoteNode({
   );
 }
 
+/**
+ * 左右边距总和
+ */
 const PADDING_X = 16;
+/**
+ * 上下边距总和
+ */
 const PADDING_Y = 10;
 const TEXT_HEIGHT = 20.5;
 
@@ -497,6 +511,7 @@ function NodeImage({
   setSize,
 }: NodeImageProps) {
   const imageRef = useRef<SVGImageElement | null>(null);
+  const resizeHandleRef = useRef<SVGRectElement | null>(null);
   const paperContext = use(PaperContext);
   const editMode = paperContext?.editMode;
   const flatTree = paperContext?.flatTree;
@@ -509,12 +524,21 @@ function NodeImage({
     startY: 0,
     startWidth: 0,
     startHeight: 0,
+    currentWidth: 0,
+    currentHeight: 0,
   });
 
-  // Use custom dimensions if set, otherwise calculate from natural size
-  const displayWidth = imageWidth ?? size.width - PADDING_X;
-  const displayHeight = imageHeight ?? size.height - PADDING_X;
+  // 有了 imageWidth 和 imageHeight，就不需要等图片加载完成了，可以直接设置节点大小
+  useLayoutEffect(() => {
+    if (imageWidth && imageHeight) {
+      setSize({
+        width: imageWidth + PADDING_X,
+        height: imageHeight + PADDING_X,
+      });
+    }
+  }, [imageWidth, imageHeight, setSize]);
 
+  // 图片加载完成后，根据实际图片大小设置节点大小（如果没有 imageWidth 和 imageHeight 的话）
   const onImageLoad = () => {
     if (imageUrl && imageRef.current && !imageWidth && !imageHeight) {
       const { width, height } = imageRef.current.getBBox();
@@ -526,30 +550,72 @@ function NodeImage({
     }
   };
 
+  const displayWidth = size.width - PADDING_X;
+  const displayHeight = size.height - PADDING_X;
+
   const handleResizeStart = (e: React.PointerEvent<SVGRectElement>) => {
+    // why doesn't work? (<g>'s onPointerDown will trigger first...)
+    // because of the React's synthetic event system
     e.stopPropagation();
     if (!editMode) return;
+
+    const resizeHandle = resizeHandleRef.current;
+
+    resizeHandle?.setPointerCapture(e.pointerId);
 
     resizeRef.current.isResizing = true;
     resizeRef.current.startX = e.clientX;
     resizeRef.current.startY = e.clientY;
     resizeRef.current.startWidth = displayWidth;
     resizeRef.current.startHeight = displayHeight;
+    resizeRef.current.currentWidth = displayWidth;
+    resizeRef.current.currentHeight = displayHeight;
+
+    const aspectRatio =
+      resizeRef.current.startHeight > 0
+        ? resizeRef.current.startWidth / resizeRef.current.startHeight
+        : 1;
 
     const handleResizeMove = (moveEvent: PointerEvent) => {
       if (!resizeRef.current.isResizing) return;
 
-      const deltaX = (moveEvent.clientX - resizeRef.current.startX) / (viewportZoom || 1);
-      const deltaY = (moveEvent.clientY - resizeRef.current.startY) / (viewportZoom || 1);
+      // TODO: 需要考虑 viewport zoom 的影响，保证在不同 zoom 下 resize 的感觉一致
+      const deltaX =
+        (moveEvent.clientX - resizeRef.current.startX) / (viewportZoom || 1);
+      const deltaY =
+        (moveEvent.clientY - resizeRef.current.startY) / (viewportZoom || 1);
 
-      const newWidth = Math.max(50, resizeRef.current.startWidth + deltaX);
-      const newHeight = Math.max(50, resizeRef.current.startHeight + deltaY);
+      // Use Euclidean distance for more natural diagonal resizing
+      const delta = Math.sqrt(deltaX * deltaX + deltaY * deltaY) *
+        Math.sign(deltaX + deltaY);
+
+      const newWidth = Math.max(50, resizeRef.current.startWidth + delta);
+      const newHeight = Math.max(
+        50,
+        resizeRef.current.startHeight + delta / aspectRatio,
+      );
 
       // Update local size for immediate feedback
       setSize({
         width: newWidth + PADDING_X,
         height: newHeight + PADDING_X,
       });
+
+      // store current size in ref for use in handleResizeEnd
+      resizeRef.current.currentWidth = newWidth;
+      resizeRef.current.currentHeight = newHeight;
+    };
+
+    const handleResizeEnd = () => {
+      resizeRef.current.isResizing = false;
+      resizeHandle?.removeEventListener(
+        "pointermove",
+        handleResizeMove,
+      );
+      resizeHandle?.removeEventListener(
+        "pointerup",
+        handleResizeEnd,
+      );
 
       // Update flatTree with new dimensions
       if (setFlatTree && flatTree) {
@@ -558,24 +624,18 @@ function NodeImage({
             node.id === nodeId
               ? {
                   ...node,
-                  imageWidth: newWidth,
-                  imageHeight: newHeight,
+                  imageWidth: resizeRef.current.currentWidth,
+                  imageHeight: resizeRef.current.currentHeight,
                   nodeType: node.nodeType === "new" ? "new" : "edited",
                 }
-              : node
-          )
+              : node,
+          ),
         );
       }
     };
 
-    const handleResizeEnd = () => {
-      resizeRef.current.isResizing = false;
-      window.removeEventListener("pointermove", handleResizeMove);
-      window.removeEventListener("pointerup", handleResizeEnd);
-    };
-
-    window.addEventListener("pointermove", handleResizeMove);
-    window.addEventListener("pointerup", handleResizeEnd);
+    resizeHandle?.addEventListener("pointermove", handleResizeMove);
+    resizeHandle?.addEventListener("pointerup", handleResizeEnd);
   };
 
   return (
@@ -600,6 +660,8 @@ function NodeImage({
       />
       {editMode && (
         <rect
+          ref={resizeHandleRef}
+          data-el-type={"resize-handle"}
           x={displayWidth / 2 - 6}
           y={displayHeight / 2 - 6}
           width={12}
