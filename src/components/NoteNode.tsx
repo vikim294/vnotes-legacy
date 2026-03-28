@@ -38,6 +38,8 @@ export default function NoteNode({
   contentType,
   imageUrl,
   isTempImageUrl,
+  imageWidth,
+  imageHeight,
 }: NodeData) {
   const navigate = useNavigate();
 
@@ -370,8 +372,11 @@ export default function NoteNode({
 
       {contentType === "image" && imageUrl && (
         <NodeImage
+          nodeId={id}
           isTempImageUrl={isTempImageUrl}
           imageUrl={imageUrl}
+          imageWidth={imageWidth}
+          imageHeight={imageHeight}
           size={nodeSize}
           setSize={setNodeSize}
         ></NodeImage>
@@ -473,22 +478,45 @@ function NodeLabel({ label, marked, isDetail, size, setSize }: NodeLabelProps) {
 }
 
 interface NodeImageProps {
+  nodeId: number | string;
   isTempImageUrl?: boolean;
   imageUrl: string;
+  imageWidth?: number;
+  imageHeight?: number;
   size: Size;
   setSize: React.Dispatch<React.SetStateAction<Size>>;
 }
 
 function NodeImage({
+  nodeId,
   isTempImageUrl,
   imageUrl,
+  imageWidth,
+  imageHeight,
   size,
   setSize,
 }: NodeImageProps) {
   const imageRef = useRef<SVGImageElement | null>(null);
+  const paperContext = use(PaperContext);
+  const editMode = paperContext?.editMode;
+  const flatTree = paperContext?.flatTree;
+  const setFlatTree = paperContext?.setFlatTree;
+  const viewportZoom = paperContext?.viewportZoom;
+
+  const resizeRef = useRef({
+    isResizing: false,
+    startX: 0,
+    startY: 0,
+    startWidth: 0,
+    startHeight: 0,
+  });
+
+  // Use custom dimensions if set, otherwise calculate from natural size
+  const displayWidth = imageWidth ?? size.width - PADDING_X;
+  const displayHeight = imageHeight ?? size.height - PADDING_X;
 
   const onImageLoad = () => {
-    if (imageUrl && imageRef.current) {
+    if (imageUrl && imageRef.current && !imageWidth && !imageHeight) {
       const { width, height } = imageRef.current.getBBox();
 
       setSize({
@@ -496,6 +524,58 @@ function NodeImage({
         height: height + PADDING_X,
       });
     }
+  };
+
+  const handleResizeStart = (e: React.PointerEvent<SVGRectElement>) => {
+    e.stopPropagation();
+    if (!editMode) return;
+
+    resizeRef.current.isResizing = true;
+    resizeRef.current.startX = e.clientX;
+    resizeRef.current.startY = e.clientY;
+    resizeRef.current.startWidth = displayWidth;
+    resizeRef.current.startHeight = displayHeight;
+
+    const handleResizeMove = (moveEvent: PointerEvent) => {
+      if (!resizeRef.current.isResizing) return;
+
+      const deltaX = (moveEvent.clientX - resizeRef.current.startX) / (viewportZoom || 1);
+      const deltaY = (moveEvent.clientY - resizeRef.current.startY) / (viewportZoom || 1);
+
+      const newWidth = Math.max(50, resizeRef.current.startWidth + deltaX);
+      const newHeight = Math.max(50, resizeRef.current.startHeight + deltaY);
+
+      // Update local size for immediate feedback
+      setSize({
+        width: newWidth + PADDING_X,
+        height: newHeight + PADDING_X,
+      });
+
+      // Update flatTree with new dimensions
+      if (setFlatTree && flatTree) {
+        setFlatTree((prev) =>
+          prev.map((node) =>
+            node.id === nodeId
+              ? {
+                  ...node,
+                  imageWidth: newWidth,
+                  imageHeight: newHeight,
+                  nodeType: node.nodeType === "new" ? "new" : "edited",
+                }
+              : node
+          )
+        );
+      }
+    };
+
+    const handleResizeEnd = () => {
+      resizeRef.current.isResizing = false;
+      window.removeEventListener("pointermove", handleResizeMove);
+      window.removeEventListener("pointerup", handleResizeEnd);
+    };
+
+    window.addEventListener("pointermove", handleResizeMove);
+    window.addEventListener("pointerup", handleResizeEnd);
   };
 
   return (
@@ -512,10 +592,26 @@ function NodeImage({
       <image
         ref={imageRef}
         href={getImageNodeUrl(imageUrl, isTempImageUrl)}
-        x={-size.width / 2 + PADDING_X / 2}
-        y={-size.height / 2 + PADDING_X / 2}
+        x={-displayWidth / 2}
+        y={-displayHeight / 2}
+        width={displayWidth}
+        height={displayHeight}
         onLoad={onImageLoad}
       />
+      {editMode && (
+        <rect
+          x={displayWidth / 2 - 6}
+          y={displayHeight / 2 - 6}
+          width={12}
+          height={12}
+          fill="var(--color-primary, #3b82f6)"
+          stroke="white"
+          strokeWidth={2}
+          rx={2}
+          className="cursor-se-resize"
+          onPointerDown={handleResizeStart}
+        />
+      )}
     </>
   );
 }

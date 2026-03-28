@@ -16,6 +16,8 @@ export interface NodeData {
   contentType?: NodeContentType;
   isTempImageUrl?: boolean;
   imageUrl?: string;
+  imageWidth?: number;
+  imageHeight?: number;
 }
 
 export type NodeType = "new" | "edited" | "deleted";
