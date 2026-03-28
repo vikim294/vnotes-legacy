@@ -8,10 +8,12 @@ import {
   useState,
 } from "react";
 import { v4 as uuidv4 } from "uuid";
+import { ArrowLeft } from "lucide-react";
 import {
   findDescendantsByIdInFlatTree,
   getDistanceBetweenTwoPoints,
 } from "../lib";
+import { useNavigate } from "react-router";
 import Button from "../components/Button";
 import NodeMenu, { type NodeMenuExpose } from "../components/NodeMenu";
 import NoteTree from "../components/NoteTree";
@@ -51,6 +53,7 @@ interface NoteGraphProps {
 
 const NoteGraph = memo<NoteGraphProps>(
   ({ graphType, noteTitle, noteDetail, flatTree, setFlatTree, onExitEdit }) => {
+    const navigate = useNavigate();
     const hasMountedRef = useRef(false);
 
     const [paperSize, setPaperSize] = useState({ width: 0, height: 0 });
@@ -884,8 +887,15 @@ const NoteGraph = memo<NoteGraphProps>(
             <NoteTree flatTree={flatTree} />
           </svg>
           {noteTitle && (
-            <div className="fixed top-0 left-0 select-none text-[#ffffff5c]">
-              {noteTitle}
+            <div className="fixed top-0 left-0 flex items-center gap-2 select-none">
+              <button
+                onClick={() => navigate(-1)}
+                className="text-[#ffffff5c] hover:text-white cursor-pointer transition-colors p-1"
+                title="Go back"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </button>
+              <span className="text-[#ffffff5c]">{noteTitle}</span>
             </div>
           )}
 
