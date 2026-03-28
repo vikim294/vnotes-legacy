@@ -890,7 +890,7 @@ const NoteGraph = memo<NoteGraphProps>(
             <div className="fixed top-0 left-0 flex items-center gap-2 select-none">
               <button
                 onClick={() => navigate(-1)}
-                className="text-[#ffffff5c] hover:text-white cursor-pointer transition-colors p-1"
+                className="cursor-pointer p-1 text-[#ffffff5c] transition-colors hover:text-white"
                 title="Go back"
               >
                 <ArrowLeft className="h-5 w-5" />
@@ -899,16 +899,14 @@ const NoteGraph = memo<NoteGraphProps>(
             </div>
           )}
 
-          <div className="fixed top-0 right-0 select-none text-[#ffffff5c]">
-            {viewport.zoom !== 1 && (
-              <button
-                onClick={resetView}
-                className="hover:text-primary cursor-pointer transition-colors"
-              >
-                {/* {viewport.zoom.toFixed(2)}  */}
-                reset view
-              </button>
-            )}
+          <div className="fixed top-0 right-0 text-[#ffffff5c] select-none">
+            <button
+              onClick={resetView}
+              className="hover:text-primary cursor-pointer transition-colors"
+            >
+              {/* {viewport.zoom.toFixed(2)}  */}
+              reset view
+            </button>
           </div>
 
           {!isChoosingParent && chosenParentNodeId === null && isAuthorized && (
