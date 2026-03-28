@@ -579,11 +579,11 @@ function NodeImage({
     const handleResizeMove = (moveEvent: PointerEvent) => {
       if (!resizeRef.current.isResizing) return;
 
-      // TODO: 需要考虑 viewport zoom 的影响，保证在不同 zoom 下 resize 的感觉一致
+      // 考虑 viewport zoom 的影响，保证在不同 zoom 下 resize 的感觉一致
       const deltaX =
-        (moveEvent.clientX - resizeRef.current.startX) / (viewportZoom || 1);
+        (moveEvent.clientX - resizeRef.current.startX) * (viewportZoom || 1);
       const deltaY =
-        (moveEvent.clientY - resizeRef.current.startY) / (viewportZoom || 1);
+        (moveEvent.clientY - resizeRef.current.startY) * (viewportZoom || 1);
 
       // Use Euclidean distance for more natural diagonal resizing
       const delta = Math.sqrt(deltaX * deltaX + deltaY * deltaY) *
