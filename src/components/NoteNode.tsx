@@ -662,14 +662,14 @@ function NodeImage({
         <rect
           ref={resizeHandleRef}
           data-el-type={"resize-handle"}
-          x={displayWidth / 2 - 6 / (viewportZoom || 1)}
-          y={displayHeight / 2 - 6 / (viewportZoom || 1)}
-          width={12 / (viewportZoom || 1)}
-          height={12 / (viewportZoom || 1)}
+          x={displayWidth / 2 - 6 * (viewportZoom || 1)}
+          y={displayHeight / 2 - 6 * (viewportZoom || 1)}
+          width={12 * (viewportZoom || 1)}
+          height={12 * (viewportZoom || 1)}
           fill="var(--color-primary, #3b82f6)"
           stroke="white"
-          strokeWidth={2 / (viewportZoom || 1)}
-          rx={2 / (viewportZoom || 1)}
+          strokeWidth={2 * (viewportZoom || 1)}
+          rx={2 * (viewportZoom || 1)}
           className="cursor-se-resize"
           onPointerDown={handleResizeStart}
         />
