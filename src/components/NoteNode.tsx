@@ -418,6 +418,44 @@ const PADDING_X = 16;
 const PADDING_Y = 10;
 const TEXT_HEIGHT = 20.5;
 
+interface TextSegment {
+  type: 'text' | 'link';
+  content: string;
+}
+
+const parseTextForLinks = (text: string): TextSegment[] => {
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const segments: TextSegment[] = [];
+  let lastIndex = 0;
+  let match;
+
+  while ((match = urlRegex.exec(text)) !== null) {
+    // Add text before the URL
+    if (match.index > lastIndex) {
+      segments.push({
+        type: 'text',
+        content: text.slice(lastIndex, match.index)
+      });
+    }
+    // Add the URL
+    segments.push({
+      type: 'link',
+      content: match[0]
+    });
+    lastIndex = match.index + match[0].length;
+  }
+
+  // Add remaining text after last URL
+  if (lastIndex < text.length) {
+    segments.push({
+      type: 'text',
+      content: text.slice(lastIndex)
+    });
+  }
+
+  return segments;
+};
+
 interface NodeLabelProps {
   label: string;
   marked?: boolean;
@@ -426,6 +464,7 @@ interface NodeLabelProps {
   setSize: React.Dispatch<React.SetStateAction<Size>>;
 }
 function NodeLabel({ label, marked, isDetail, size, setSize }: NodeLabelProps) {
+  // lines
   const textList = label.split("\n");
   const textsRef = useRef<Map<number, SVGTextElement>>(new Map());
 
@@ -462,31 +501,49 @@ function NodeLabel({ label, marked, isDetail, size, setSize }: NodeLabelProps) {
         ry="6"
       />
 
-      {textList.map((text, index) => (
-        <text
-          key={index}
-          ref={(node) => {
-            if (node) {
-              textsRef.current.set(index, node);
-            }
+      {textList.map((text, index) => {
+        const segments = parseTextForLinks(text);
+        return (
+          // one line
+          <text
+            key={index}
+            ref={(node) => {
+              if (node) {
+                textsRef.current.set(index, node);
+              }
 
-            return () => {
-              textsRef.current.delete(index);
-            };
-          }}
-          x={size.width / -2 + PADDING_X / 2}
-          y={0}
-          dy={index * TEXT_HEIGHT + ((textList.length - 1) * TEXT_HEIGHT) / -2}
-          fill={marked ? "var(--color-node-marked)" : "white"}
-          dominantBaseline="central"
-          style={{ fontFamily: "monospace" }}
-          className={browseMode ? "select-none" : ""}
-          // 给 <text> 元素添加 xml:space="preserve" 属性，可以保留原始空格和换行（类似于 HTML 中的 <pre> 标签）
-          xmlSpace="preserve"
-        >
-          {text}
-        </text>
-      ))}
+              return () => {
+                textsRef.current.delete(index);
+              };
+            }}
+            x={size.width / -2 + PADDING_X / 2}
+            y={0}
+            dy={index * TEXT_HEIGHT + ((textList.length - 1) * TEXT_HEIGHT) / -2}
+            fill={marked ? "var(--color-node-marked)" : "white"}
+            dominantBaseline="central"
+            style={{ fontFamily: "monospace" }}
+            className={browseMode ? "select-none" : ""}
+            // 给 <text> 元素添加 xml:space="preserve" 属性，可以保留原始空格和换行（类似于 HTML 中的 <pre> 标签）
+            xmlSpace="preserve"
+          >
+            {segments.map((segment, segIndex) =>
+              segment.type === 'link' ? (
+                <a
+                  key={segIndex}
+                  href={segment.content}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ fill: '#60a5fa', textDecoration: 'underline', cursor: 'pointer' }}
+                >
+                  {segment.content}
+                </a>
+              ) : (
+                <tspan key={segIndex}>{segment.content}</tspan>
+              )
+            )}
+          </text>
+        );
+      })}
     </>
   );
 }
