@@ -546,8 +546,7 @@ function NodeLabel({ label, marked, isDetail, size, setSize }: NodeLabelProps) {
               segment.type === "link" ? (
                 <a
                   key={segIndex}
-                  href={segment.content}
-                  target="_blank"
+                  {...(!browseMode && { href: segment.content, target: "_blank" })}
                   rel="noopener noreferrer"
                   // @ts-expect-error tslint doesn't recognize <a> in SVG
                   dominantBaseline="central"
@@ -731,8 +730,8 @@ function NodeImage({
         href={getImageNodeUrl(imageUrl, isTempImageUrl)}
         x={-displayWidth / 2}
         y={-displayHeight / 2}
-        width={displayWidth}
-        height={displayHeight}
+        width={displayWidth > 0 ? displayWidth : 0}
+        height={displayHeight > 0 ? displayHeight : 0}
         onLoad={onImageLoad}
       />
       {editMode && (
