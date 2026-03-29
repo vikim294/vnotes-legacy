@@ -112,6 +112,19 @@ export default function NoteNode({
         Toast.error("new parent node cannot be itself!");
         return;
       }
+      // 检查是否选择了已经是父节点的节点
+      if (flatTree && selectedNodeId) {
+        const selectedNode = flatTree.find((node) => node.id === selectedNodeId);
+        if (selectedNode?.pid === id) {
+          Toast.error("this node is already the parent!");
+          return;
+        }
+      }
+      // 检查是否选择了 detail 节点
+      if (isDetail) {
+        Toast.error("cannot choose a detail node as parent!");
+        return;
+      }
       // 检查是否选择了子孙节点作为父节点
       if (flatTree && selectedNodeId) {
         const descendants = findDescendantsByIdInFlatTree(
