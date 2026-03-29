@@ -624,8 +624,6 @@ function NodeImage({
     if (imageUrl && imageRef.current && !imageWidth && !imageHeight) {
       const { width, height } = imageRef.current.getBBox();
 
-      console.log("Image loaded with size:", width, height);
-
       setSize({
         width: width + PADDING_X,
         height: height + PADDING_X,
