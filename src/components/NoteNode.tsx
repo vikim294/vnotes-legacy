@@ -423,38 +423,48 @@ interface TextSegment {
   content: string;
 }
 
+// Valid URL characters per RFC 3986 (conservative — excludes chars that are
+// almost always sentence punctuation in CJK/mixed text contexts)
+// const URL_CHAR = /[A-Za-z0-9\-._~:/?#[\]@!$&'*+;=%]/;
+const urlRegex = /(https?:\/\/[A-Za-z0-9\-._~:/?#[\]@!$&'*+;=%]+)/g;
+
+const stripTrailingPunctuation = (url: string): string => {
+  // Iteratively strip trailing chars that look like sentence punctuation.
+  // Parentheses: only strip unmatched closing parens
+  let result = url;
+  result = result.replace(/[.,;:]+$/, ""); // trailing ASCII sentence punctuation
+  result = result.replace(/\)+$/, (parens) => {
+    // strip unmatched closing parens
+    const opens = (result.match(/\(/g) || []).length;
+    const closes = (result.match(/\)/g) || []).length;
+    const unmatched = closes - opens;
+    return unmatched > 0 ? parens.slice(0, -unmatched) : parens;
+  });
+  return result;
+};
+
 const parseTextForLinks = (text: string): TextSegment[] => {
-  const urlRegex = /(https?:\/\/[^\s]+)/g;
   const segments: TextSegment[] = [];
   let lastIndex = 0;
   let match;
 
   while ((match = urlRegex.exec(text)) !== null) {
-    // Add text before the URL
+    const rawUrl = match[0];
+    const cleanUrl = stripTrailingPunctuation(rawUrl);
+
     if (match.index > lastIndex) {
       segments.push({
         type: "text",
         content: text.slice(lastIndex, match.index),
       });
     }
-    // Strip trailing punctuation from URL
-    const rawUrl = match[0];
-    const cleanUrl = rawUrl.replace(/[.,;:)'"\]}]）》，。！？]+$/, '');
-    // Add the URL
-    segments.push({
-      type: "link",
-      content: cleanUrl,
-    });
-    // Adjust lastIndex for the difference between raw and clean URL
+
+    segments.push({ type: "link", content: cleanUrl });
     lastIndex = match.index + cleanUrl.length;
   }
 
-  // Add remaining text after last URL
   if (lastIndex < text.length) {
-    segments.push({
-      type: "text",
-      content: text.slice(lastIndex),
-    });
+    segments.push({ type: "text", content: text.slice(lastIndex) });
   }
 
   return segments;
