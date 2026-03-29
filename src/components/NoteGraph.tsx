@@ -834,6 +834,11 @@ const NoteGraph = memo<NoteGraphProps>(
       };
 
       const touchHandler = (e: TouchEvent) => {
+        // Allow link clicks - don't prevent default if touching a link
+        const target = e.target as HTMLElement;
+        if (target.tagName === "a" || target.closest("a")) {
+          return;
+        }
         e.preventDefault();
       };
 
@@ -896,7 +901,7 @@ const NoteGraph = memo<NoteGraphProps>(
             debouncedSaveViewport({
               x: newX,
               y: newY,
-              zoom: newZoom
+              zoom: newZoom,
             });
           }
 
