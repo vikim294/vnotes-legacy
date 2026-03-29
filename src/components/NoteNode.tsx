@@ -437,12 +437,16 @@ const parseTextForLinks = (text: string): TextSegment[] => {
         content: text.slice(lastIndex, match.index),
       });
     }
+    // Strip trailing punctuation from URL
+    const rawUrl = match[0];
+    const cleanUrl = rawUrl.replace(/[.,;:)'"\]}]）》，。！？]+$/, '');
     // Add the URL
     segments.push({
       type: "link",
-      content: match[0],
+      content: cleanUrl,
     });
-    lastIndex = match.index + match[0].length;
+    // Adjust lastIndex for the difference between raw and clean URL
+    lastIndex = match.index + cleanUrl.length;
   }
 
   // Add remaining text after last URL
