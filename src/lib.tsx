@@ -28,35 +28,6 @@ export const flattenTree = (node: NodeData, result: NodeData[] = []) => {
   return result;
 };
 
-export const findDescendantsByIdInTree = (
-  node: NodeData,
-  id: number | string,
-  result: NodeData[] = [],
-) => {
-  if (node.id === id) {
-    node.children?.forEach((item) => {
-      // collect all node's kids
-      result.push(item);
-      // collect kids' kids
-      findDescendantsByIdInTree(item, item.id, result);
-    });
-
-    return result;
-  } else {
-    if (node.children) {
-      for (const item of node.children) {
-        if (item.id === id) {
-          findDescendantsByIdInTree(item, item.id, result);
-          return result;
-        }
-      }
-      return [];
-    } else {
-      return [];
-    }
-  }
-};
-
 export const findDescendantsByIdInFlatTree = (
   flatTree: NodeData[],
   id: number | string,
