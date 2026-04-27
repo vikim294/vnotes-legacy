@@ -1,17 +1,42 @@
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:2940/api'
 export const IMAGE_BASE_URL = import.meta.env.VITE_IMAGE_BASE_URL || 'http://localhost:2940'
 
+export interface Note {
+    id: number
+    label: string
+    x: number
+    y: number
+    pid: number | null
+    puuid: string | null
+    uuid: string
+    userId: number
+    isDetail: boolean
+    createdAt: string
+    updatedAt: string
+}
+
 export async function verifyToken(token: string): Promise<boolean> {
-  try {
-    const response = await fetch(`${API_BASE_URL}/auth/verify`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ token }),
-    })
-    return response.ok
-  } catch {
-    return false
-  }
+    try {
+        const response = await fetch(`${API_BASE_URL}/auth/verify`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ token }),
+        })
+        return response.ok
+    } catch {
+        return false
+    }
+}
+
+export async function searchNotes(keyword: string): Promise<Note[]> {
+    const response = await fetch(
+        `${API_BASE_URL}/notes/search?keyword=${encodeURIComponent(keyword)}`
+    )
+    const res = await response.json()
+    if (res.code === 0) {
+        return res.data as Note[]
+    }
+    return []
 }
