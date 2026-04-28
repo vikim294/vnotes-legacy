@@ -11,6 +11,7 @@ export interface Note {
     uuid: string
     userId: number
     isDetail: boolean
+    isShared?: boolean
     createdAt: string
     updatedAt: string
 }
@@ -39,4 +40,23 @@ export async function searchNotes(keyword: string): Promise<Note[]> {
         return res.data as Note[]
     }
     return []
+}
+
+export async function toggleNoteShare(noteId: number): Promise<{ isShared: boolean } | null> {
+    try {
+        const response = await fetch(`${API_BASE_URL}/notes/share`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ noteId }),
+        })
+        const res = await response.json()
+        if (res.code === 0) {
+            return res.data as { isShared: boolean }
+        }
+        return null
+    } catch {
+        return null
+    }
 }
