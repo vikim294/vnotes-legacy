@@ -81,10 +81,7 @@ export default function SearchModal({ isOpen, onClose, onSelectNote }: SearchMod
     const showResults = hasQuery && results.length > 0
 
     return createPortal(
-        <div
-            className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 p-4 pt-20"
-            onClick={handleClose}
-        >
+        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 p-4 pt-20">
             <div
                 className="bg-surface-900 border-surface-700 flex max-h-[70vh] w-full max-w-lg flex-col overflow-hidden rounded-xl border shadow-2xl"
                 onClick={(e) => e.stopPropagation()}
