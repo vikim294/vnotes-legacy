@@ -10,6 +10,7 @@ import PaperContext from "../context/paperContext";
 import { findDescendantsByIdInFlatTree } from "../lib";
 import type { Size } from "../types/note";
 import { useNavigate } from "react-router";
+import { Share2 } from "lucide-react";
 import type { NodeData } from "../types";
 import { getImageNodeUrl } from "../utils";
 import { Toast } from "../components/Toast";
@@ -35,6 +36,7 @@ export default function NoteNode({
   // expanded,
   marked,
   isDetail,
+  isShared,
   contentType,
   imageUrl,
   isTempImageUrl,
@@ -386,6 +388,7 @@ export default function NoteNode({
           label={label}
           marked={marked}
           isDetail={isDetail}
+          isShared={isShared}
           size={nodeSize}
           setSize={setNodeSize}
         ></NodeLabel>
@@ -487,10 +490,11 @@ interface NodeLabelProps {
   label: string;
   marked?: boolean;
   isDetail?: boolean;
+  isShared?: boolean;
   size: Size;
   setSize: React.Dispatch<React.SetStateAction<Size>>;
 }
-function NodeLabel({ label, marked, isDetail, size, setSize }: NodeLabelProps) {
+function NodeLabel({ label, marked, isDetail, isShared, size, setSize }: NodeLabelProps) {
   // lines
   const textList = label.split("\n");
   const textsRef = useRef<Map<number, SVGTextElement>>(new Map());
@@ -527,6 +531,27 @@ function NodeLabel({ label, marked, isDetail, size, setSize }: NodeLabelProps) {
         rx="6"
         ry="6"
       />
+
+      {isDetail && isShared && (
+        <foreignObject
+          x={size.width / 2 - 10}
+          y={size.height / -2 - 10}
+          width={20}
+          height={20}
+        >
+          <div
+            style={{
+              width: 20,
+              height: 20,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Share2 size={14} color="#3b82f6" />
+          </div>
+        </foreignObject>
+      )}
 
       {textList.map((text, index) => {
         const segments = parseTextForLinks(text);

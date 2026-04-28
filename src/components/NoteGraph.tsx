@@ -11,7 +11,7 @@ import useModal from '../components/useModal'
 import { Toast } from '../components/Toast'
 import SearchModal from '../components/SearchModal'
 import { type NodeContentType, type NodeData, type NoteDetailData } from '../types'
-import { API_BASE_URL, verifyToken, type Note } from '../api'
+import { API_BASE_URL, verifyToken, toggleNoteShare, type Note } from '../api'
 import FilePicker from './FilePicker'
 
 interface GestureInfo {
@@ -470,6 +470,27 @@ const NoteGraph = memo<NoteGraphProps>(
                     return node
                 })
             })
+        }
+
+        const handleNodeToggleShare = async () => {
+            const nodeId = selectedNode?.id
+            if (!nodeId || typeof nodeId !== 'number') return
+
+            const result = await toggleNoteShare(nodeId)
+            if (result) {
+                setFlatTree((prev) => {
+                    return prev.map((node) => {
+                        if (node.id === selectedNodeId) {
+                            return {
+                                ...node,
+                                isShared: result.isShared,
+                            }
+                        }
+                        return node
+                    })
+                })
+            }
+            handleNodeMenuClose()
         }
 
         const handleNodeDelete = () => {
@@ -1061,6 +1082,7 @@ const NoteGraph = memo<NoteGraphProps>(
                         onSetParent={handleNodeSetParent}
                         onDisconnectFromParent={handleNodeDisconnectFromParent}
                         onToggleMark={handleNodeToggleMark}
+                        onToggleShare={handleNodeToggleShare}
                         onDelete={handleNodeDelete}
                         onClose={handleNodeMenuClose}
                     />

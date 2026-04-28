@@ -9,6 +9,7 @@ export interface NodeData {
   y: number;
   marked?: boolean;
   isDetail?: boolean;
+  isShared?: boolean;
 
   children?: NodeData[];
   expanded?: boolean;
