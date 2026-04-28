@@ -7,6 +7,7 @@ import NoteGraph from '../../components/NoteGraph'
 
 function NoteDetail() {
     const [flatTree, setFlatTree] = useState<NodeData[]>([])
+    const [allowOperate, setAllowOperate] = useState(true)
 
     // data related
     const { id: noteId } = useParams()
@@ -20,20 +21,15 @@ function NoteDetail() {
         const res = await response.json()
         if (res.code === 0) {
             const isShared = res.data.isShared
-            if (isShared === false) {
-                // Allow access if user has a valid token (note owner)
-                const storedToken = localStorage.getItem('vnote')
-                if (storedToken) {
-                    const valid = await verifyToken(storedToken)
-                    if (!valid) {
-                        navigate('/unauthorized')
-                        return
-                    }
-                } else {
-                    navigate('/unauthorized')
-                    return
-                }
+            const storedToken = localStorage.getItem('vnote')
+            const validToken = storedToken ? await verifyToken(storedToken) : false
+
+            if (!isShared && !validToken) {
+                navigate('/unauthorized')
+                return
             }
+
+            setAllowOperate(validToken)
             setNoteDetail(res.data.detail)
             setFlatTree(
                 res.data.nodes.map((node: NodeData) => ({
@@ -62,6 +58,7 @@ function NoteDetail() {
             noteDetail={noteDetail}
             flatTree={flatTree}
             setFlatTree={setFlatTree}
+            allowOperate={allowOperate}
             onExitEdit={getNoteDetail}
         />
     )

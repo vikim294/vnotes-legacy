@@ -11,7 +11,7 @@ import useModal from '../components/useModal'
 import { Toast } from '../components/Toast'
 import SearchModal from '../components/SearchModal'
 import { type NodeContentType, type NodeData, type NoteDetailData } from '../types'
-import { API_BASE_URL, verifyToken, toggleNoteShare, type Note } from '../api'
+import { API_BASE_URL, toggleNoteShare, type Note } from '../api'
 import FilePicker from './FilePicker'
 
 interface GestureInfo {
@@ -35,6 +35,7 @@ interface NoteGraphProps {
     flatTree: NodeData[]
     setFlatTree: React.Dispatch<React.SetStateAction<NodeData[]>>
     onExitEdit: () => void
+    allowOperate?: boolean
 }
 
 const VIEWPORT_STORAGE_KEY = 'vnote-directory-viewport'
@@ -60,7 +61,15 @@ const saveViewportState = (viewport: { x: number; y: number; zoom: number }) => 
 }
 
 const NoteGraph = memo<NoteGraphProps>(
-    ({ graphType, noteTitle, noteDetail, flatTree, setFlatTree, onExitEdit }) => {
+    ({
+        graphType,
+        noteTitle,
+        noteDetail,
+        flatTree,
+        setFlatTree,
+        onExitEdit,
+        allowOperate = true,
+    }) => {
         const navigate = useNavigate()
         const hasMountedRef = useRef(false)
 
@@ -210,21 +219,6 @@ const NoteGraph = memo<NoteGraphProps>(
                 isChoosingParent,
             ]
         )
-
-        // Authorization state - verified asynchronously with backend
-        const [isAuthorized, setIsAuthorized] = useState(false)
-        useEffect(() => {
-            const checkAuth = async () => {
-                const storedToken = localStorage.getItem('vnote')
-                if (storedToken) {
-                    const valid = await verifyToken(storedToken)
-                    setIsAuthorized(valid)
-                } else {
-                    setIsAuthorized(false)
-                }
-            }
-            checkAuth()
-        }, [])
 
         const handleAddNewNode = () => {
             setNodeEditContent('')
@@ -977,35 +971,14 @@ const NoteGraph = memo<NoteGraphProps>(
                         </button>
                     </div>
 
-                    {!isChoosingParent && chosenParentNodeId === null && isAuthorized && (
+                    {!isChoosingParent && chosenParentNodeId === null && (
                         <div className="fixed top-25 right-0 w-36">
-                            {/* expand/collapse all button */}
-                            {/* <div>
-                <Button
-                  onClick={() => {
-                    const newValue = !isAllExpanded;  
-
-                    setFlatTree((prev) =>
-                      prev.map((item) => ({
-                        ...item,
-                        expanded: newValue ? true : false,
-                      })),
-                    );
-
-                    setIsAllExpand(newValue);
-                  }}
-                >
-                  {isAllExpanded ? "collapseAll" : "expandAll"}
-                </Button>
-              </div> */}
-
                             {!isSaving && (
                                 <div>
                                     <Button
                                         className="block w-full"
                                         onClick={() => {
                                             const newValue = !browseMode
-
                                             setBrowseMode(newValue)
                                         }}
                                     >
@@ -1014,59 +987,62 @@ const NoteGraph = memo<NoteGraphProps>(
                                 </div>
                             )}
 
-                            {/* search button */}
-                            <div>
-                                <Button
-                                    className="flex w-full items-center justify-center"
-                                    onClick={() => setIsSearchModalOpen(true)}
-                                >
-                                    <Search className="h-4 w-4" />
-                                </Button>
-                            </div>
-
-                            {/* edit mode */}
-                            {!editMode && (
-                                <Button
-                                    className="block w-full"
-                                    type="primary"
-                                    onClick={() => setEditMode(true)}
-                                >
-                                    edit mode
-                                </Button>
-                            )}
-
-                            {editMode && (
+                            {allowOperate && (
                                 <>
-                                    {!isSaving && (
-                                        <div>
-                                            <Button
-                                                className="block w-full"
-                                                type="secondary"
-                                                onClick={handleAddNewNode}
-                                            >
-                                                add new node
-                                            </Button>
-                                        </div>
-                                    )}
+                                    {/* search button */}
                                     <div>
+                                        <Button
+                                            className="flex w-full items-center justify-center"
+                                            onClick={() => setIsSearchModalOpen(true)}
+                                        >
+                                            <Search className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                    {/* edit mode */}
+                                    {!editMode && (
                                         <Button
                                             className="block w-full"
                                             type="primary"
-                                            onClick={handleSaveEdit}
-                                            disabled={isSaving}
+                                            onClick={() => setEditMode(true)}
                                         >
-                                            {isSaving ? 'saving...' : 'save'}
+                                            edit mode
                                         </Button>
-                                    </div>
-                                    {!isSaving && (
-                                        <div>
-                                            <Button
-                                                className="block w-full"
-                                                onClick={handleExitEdit}
-                                            >
-                                                exit
-                                            </Button>
-                                        </div>
+                                    )}
+
+                                    {editMode && (
+                                        <>
+                                            {!isSaving && (
+                                                <div>
+                                                    <Button
+                                                        className="block w-full"
+                                                        type="secondary"
+                                                        onClick={handleAddNewNode}
+                                                    >
+                                                        add new node
+                                                    </Button>
+                                                </div>
+                                            )}
+                                            <div>
+                                                <Button
+                                                    className="block w-full"
+                                                    type="primary"
+                                                    onClick={handleSaveEdit}
+                                                    disabled={isSaving}
+                                                >
+                                                    {isSaving ? 'saving...' : 'save'}
+                                                </Button>
+                                            </div>
+                                            {!isSaving && (
+                                                <div>
+                                                    <Button
+                                                        className="block w-full"
+                                                        onClick={handleExitEdit}
+                                                    >
+                                                        exit
+                                                    </Button>
+                                                </div>
+                                            )}
+                                        </>
                                     )}
                                 </>
                             )}

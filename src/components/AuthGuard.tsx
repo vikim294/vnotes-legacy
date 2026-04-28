@@ -1,61 +1,35 @@
-import { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router";
-import { verifyToken } from "../api";
+import { useEffect } from 'react'
+import { useNavigate } from 'react-router'
+import { verifyToken } from '../api'
 
 interface AuthGuardProps {
-  children: React.ReactNode;
+    children: React.ReactNode
 }
 
-const PUBLIC_PATHS = ["/noteDetails/49", "/noteDetails/22"];
-
 const AuthGuard = ({ children }: AuthGuardProps) => {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+    const navigate = useNavigate()
 
-  useEffect(() => {
-    const checkAuth = async () => {
-      // Public paths don't need authentication
-      if (PUBLIC_PATHS.includes(location.pathname)) {
-        setIsAuthenticated(true);
-        return;
-      }
+    useEffect(() => {
+        const checkAuth = async () => {
+            const storedToken = localStorage.getItem('vnote')
 
-      const storedToken = localStorage.getItem("vnote");
+            if (!storedToken) {
+                navigate('/unauthorized', { replace: true })
+                return
+            }
 
-      if (!storedToken) {
-        setIsAuthenticated(false);
-        navigate("/unauthorized", { replace: true });
-        return;
-      }
+            const isValid = await verifyToken(storedToken)
 
-      // Verify token with backend
-      const isValid = await verifyToken(storedToken);
+            if (!isValid) {
+                localStorage.removeItem('vnote')
+                navigate('/unauthorized', { replace: true })
+            }
+        }
 
-      if (isValid) {
-        setIsAuthenticated(true);
-      } else {
-        // Token is invalid, clear it and redirect
-        localStorage.removeItem("vnote");
-        setIsAuthenticated(false);
-        navigate("/unauthorized", { replace: true });
-      }
-    };
+        checkAuth()
+    }, [navigate])
 
-    checkAuth();
-  }, [navigate, location.pathname]);
+    return <>{children}</>
+}
 
-  // Public paths always render
-  if (PUBLIC_PATHS.includes(location.pathname)) {
-    return <>{children}</>;
-  }
-
-  // Show nothing while checking authentication
-  if (isAuthenticated === null || !isAuthenticated) {
-    return null;
-  }
-
-  return <>{children}</>;
-};
-
-export default AuthGuard;
+export default AuthGuard
