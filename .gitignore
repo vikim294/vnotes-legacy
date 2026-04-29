@@ -26,6 +26,8 @@ dist-ssr
 test
 pnpm-lock.yaml
 
+*.test
+
 # Playwright
 /test-results/
 /playwright-report/

@@ -2,10 +2,10 @@
     "plugins": ["prettier-plugin-tailwindcss"],
     "semi": false,
     "singleQuote": true,
-    "tabWidth": 4,
+    "tabWidth": 2,
     "useTabs": false,
     "printWidth": 100,
     "trailingComma": "es5",
-    "jsxSingleQuote": false,
+    "jsxSingleQuote": true,
     "arrowParens": "always"
 }
