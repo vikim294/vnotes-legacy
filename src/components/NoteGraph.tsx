@@ -329,6 +329,11 @@ const NoteGraph = memo<NoteGraphProps>(
                     headers: token ? { Authorization: `Bearer ${token}` } : {},
                     body: fd,
                 })
+                if (response.status === 401) {
+                    localStorage.removeItem('vnote')
+                    window.location.href = '/unauthorized'
+                    return
+                }
                 const res = await response.json()
                 if (res.code === 0) {
                     // reset

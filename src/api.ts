@@ -9,6 +9,12 @@ export function authFetch(url: string, init?: RequestInit): Promise<Response> {
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
             ...init?.headers,
         },
+    }).then((response) => {
+        if (response.status === 401) {
+            localStorage.removeItem('vnote')
+            window.location.href = '/unauthorized'
+        }
+        return response
     })
 }
 
