@@ -35,7 +35,7 @@ export interface Note {
 
 export async function verifyToken(token: string): Promise<boolean> {
     try {
-        const response = await authFetch(`${API_BASE_URL}/auth/verify`, {
+        const response = await fetch(`${API_BASE_URL}/auth/verify`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
