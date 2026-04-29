@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 
 import { type NodeData, type NoteDetailData } from '../../types'
 import { useParams, useSearchParams, useNavigate } from 'react-router'
-import { API_BASE_URL, verifyToken } from '../../api'
+import { API_BASE_URL, verifyToken, authFetch } from '../../api'
 import NoteGraph from '../../components/NoteGraph'
 
 function NoteDetail() {
@@ -17,7 +17,7 @@ function NoteDetail() {
     const [noteDetail, setNoteDetail] = useState<NoteDetailData | null>(null)
 
     const getNoteDetail = async () => {
-        const response = await fetch(`${API_BASE_URL}/noteDetails/${noteId}`)
+        const response = await authFetch(`${API_BASE_URL}/noteDetails/${noteId}`)
         const res = await response.json()
         if (res.code === 0) {
             const isShared = res.data.isShared

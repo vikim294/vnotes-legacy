@@ -196,7 +196,10 @@ const NoteGraph = memo<NoteGraphProps>(
         // move node flow
         const [isMoveSearchOpen, setIsMoveSearchOpen] = useState(false)
         const [moveSourceNodeId, setMoveSourceNodeId] = useState<number | null>(null)
-        const [moveSuccessTarget, setMoveSuccessTarget] = useState<{ id: number; label: string } | null>(null)
+        const [moveSuccessTarget, setMoveSuccessTarget] = useState<{
+            id: number
+            label: string
+        } | null>(null)
 
         // context
         const paperContext = useMemo(
@@ -320,8 +323,10 @@ const NoteGraph = memo<NoteGraphProps>(
                     fd.append(id, file)
                 }
 
+                const token = localStorage.getItem('vnote')
                 const response = await fetch(url, {
                     method: 'POST',
+                    headers: token ? { Authorization: `Bearer ${token}` } : {},
                     body: fd,
                 })
                 const res = await response.json()
@@ -516,9 +521,9 @@ const NoteGraph = memo<NoteGraphProps>(
             if (result) {
                 // Find all descendants to remove from flatTree
                 const descendants = findDescendantsByIdInFlatTree(flatTree, moveSourceNodeId)
-                const allIdsToRemove = new Set([moveSourceNodeId, ...descendants.map(d => d.id)])
+                const allIdsToRemove = new Set([moveSourceNodeId, ...descendants.map((d) => d.id)])
 
-                setFlatTree(prev => prev.filter(node => !allIdsToRemove.has(node.id)))
+                setFlatTree((prev) => prev.filter((node) => !allIdsToRemove.has(node.id)))
                 setEditMode(false)
                 setMoveSuccessTarget({ id: note.id, label: note.label })
             }

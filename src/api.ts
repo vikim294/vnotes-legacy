@@ -1,6 +1,17 @@
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:2940/api'
 export const IMAGE_BASE_URL = import.meta.env.VITE_IMAGE_BASE_URL || 'http://localhost:2940'
 
+export function authFetch(url: string, init?: RequestInit): Promise<Response> {
+    const token = localStorage.getItem('vnote')
+    return fetch(url, {
+        ...init,
+        headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            ...init?.headers,
+        },
+    })
+}
+
 export interface Note {
     id: number
     label: string
@@ -18,7 +29,7 @@ export interface Note {
 
 export async function verifyToken(token: string): Promise<boolean> {
     try {
-        const response = await fetch(`${API_BASE_URL}/auth/verify`, {
+        const response = await authFetch(`${API_BASE_URL}/auth/verify`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -32,7 +43,7 @@ export async function verifyToken(token: string): Promise<boolean> {
 }
 
 export async function searchNotes(keyword: string): Promise<Note[]> {
-    const response = await fetch(
+    const response = await authFetch(
         `${API_BASE_URL}/notes/search?keyword=${encodeURIComponent(keyword)}`
     )
     const res = await response.json()
@@ -44,7 +55,7 @@ export async function searchNotes(keyword: string): Promise<Note[]> {
 
 export async function toggleNoteShare(noteId: number): Promise<{ isShared: boolean } | null> {
     try {
-        const response = await fetch(`${API_BASE_URL}/notes/share`, {
+        const response = await authFetch(`${API_BASE_URL}/notes/share`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -61,8 +72,11 @@ export async function toggleNoteShare(noteId: number): Promise<{ isShared: boole
     }
 }
 
-export async function moveNode(nodeId: number, targetNoteId: number): Promise<{ movedCount: number } | null> {
-    const response = await fetch(`${API_BASE_URL}/noteNodes/move`, {
+export async function moveNode(
+    nodeId: number,
+    targetNoteId: number
+): Promise<{ movedCount: number } | null> {
+    const response = await authFetch(`${API_BASE_URL}/noteNodes/move`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ nodeId, targetNoteId }),
