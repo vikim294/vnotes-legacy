@@ -8,9 +8,11 @@ interface SearchModalProps {
     isOpen: boolean
     onClose: () => void
     onSelectNote: (note: Note) => void
+    mode?: 'navigate' | 'select'
+    excludeNoteId?: number
 }
 
-export default function SearchModal({ isOpen, onClose, onSelectNote }: SearchModalProps) {
+export default function SearchModal({ isOpen, onClose, onSelectNote, mode = 'navigate', excludeNoteId }: SearchModalProps) {
     const [query, setQuery] = useState('')
     const [results, setResults] = useState<Note[]>([])
     const [isLoading, setIsLoading] = useState(false)
@@ -61,11 +63,21 @@ export default function SearchModal({ isOpen, onClose, onSelectNote }: SearchMod
         debouncedSearch(value)
     }
 
+    // Filter results based on mode
+    const filteredResults = useMemo(() => {
+        if (mode !== 'select') return results
+        return results.filter(
+            (note) => note.isDetail === true && (excludeNoteId === undefined || note.id !== excludeNoteId)
+        )
+    }, [results, mode, excludeNoteId])
+
     const handleSelectNote = (note: Note) => {
         onSelectNote(note)
         setQuery('')
         setResults([])
-        onClose()
+        if (mode !== 'select') {
+            onClose()
+        }
     }
 
     const handleClose = () => {
@@ -77,8 +89,8 @@ export default function SearchModal({ isOpen, onClose, onSelectNote }: SearchMod
     if (!isOpen) return null
 
     const hasQuery = query.trim().length > 0
-    const showNoResults = hasQuery && !isLoading && results.length === 0
-    const showResults = hasQuery && results.length > 0
+    const showNoResults = hasQuery && !isLoading && filteredResults.length === 0
+    const showResults = hasQuery && filteredResults.length > 0
 
     return createPortal(
         <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 p-4 pt-20">
@@ -94,7 +106,7 @@ export default function SearchModal({ isOpen, onClose, onSelectNote }: SearchMod
                         type="text"
                         value={query}
                         onChange={handleInputChange}
-                        placeholder="Search notes..."
+                        placeholder={mode === 'select' ? 'Search for a note to move to...' : 'Search notes...'}
                         className="bg-surface-900 flex-1 text-base text-slate-100 outline-none placeholder:text-slate-500"
                     />
                     <button
@@ -127,11 +139,11 @@ export default function SearchModal({ isOpen, onClose, onSelectNote }: SearchMod
 
                     {showResults && (
                         <ul className="py-2">
-                            {results.map((note, index) => (
+                            {filteredResults.map((note, index) => (
                                 <li
                                     key={note.id}
                                     className={
-                                        index !== results.length - 1
+                                        index !== filteredResults.length - 1
                                             ? 'border-surface-700 border-b'
                                             : ''
                                     }

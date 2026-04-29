@@ -1,5 +1,5 @@
 import { createPortal } from 'react-dom'
-import { Trash2, Pencil, Plus, Link, Unlink, Bookmark, Share2 } from 'lucide-react'
+import { Trash2, Pencil, Plus, Link, Unlink, Bookmark, Share2, ArrowRightLeft } from 'lucide-react'
 import Button from './Button'
 import {
     use,
@@ -43,6 +43,7 @@ interface NodeMenuProps {
     onDisconnectFromParent: () => void
     onToggleMark: () => void
     onToggleShare: () => void
+    onMoveTo?: () => void
     onDelete: () => void
     onClose: () => void
 }
@@ -69,6 +70,7 @@ export default function NodeMenu({
     onDisconnectFromParent,
     onToggleMark,
     onToggleShare,
+    onMoveTo,
     onDelete,
     onClose,
 }: NodeMenuProps) {
@@ -179,6 +181,15 @@ export default function NodeMenu({
                         disconnect from parent
                     </div>
                 </Button>
+                {/* Move to — only in detail graph */}
+                {graphType === 'detail' && (
+                    <Button className="block w-full" onClick={onMoveTo}>
+                        <div className="flex items-center gap-2">
+                            <ArrowRightLeft className="h-4 w-4" />
+                            move to
+                        </div>
+                    </Button>
+                )}
                 {/* 标记功能 - 仅在 detail 视图中可用，且图片节点不支持标记 */}
                 {graphType === 'detail' && selectedNode?.contentType !== 'image' && (
                     <Button className="block w-full" onClick={onToggleMark}>

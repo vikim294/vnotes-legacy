@@ -60,3 +60,16 @@ export async function toggleNoteShare(noteId: number): Promise<{ isShared: boole
         return null
     }
 }
+
+export async function moveNode(nodeId: number, targetNoteId: number): Promise<{ movedCount: number } | null> {
+    const response = await fetch(`${API_BASE_URL}/noteNodes/move`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nodeId, targetNoteId }),
+    })
+    const res = await response.json()
+    if (res.code === 0) {
+        return res.data as { movedCount: number }
+    }
+    return null
+}

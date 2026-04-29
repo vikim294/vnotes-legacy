@@ -11,8 +11,9 @@ import useModal from '../components/useModal'
 import { Toast } from '../components/Toast'
 import SearchModal from '../components/SearchModal'
 import { type NodeContentType, type NodeData, type NoteDetailData } from '../types'
-import { API_BASE_URL, toggleNoteShare, type Note } from '../api'
+import { API_BASE_URL, toggleNoteShare, moveNode, type Note } from '../api'
 import FilePicker from './FilePicker'
+import MoveSuccessModal from '../components/MoveSuccessModal'
 
 interface GestureInfo {
     type: 'none' | 'panning' | 'pinchAndZoom'
@@ -191,6 +192,11 @@ const NoteGraph = memo<NoteGraphProps>(
 
         // search modal
         const [isSearchModalOpen, setIsSearchModalOpen] = useState(false)
+
+        // move node flow
+        const [isMoveSearchOpen, setIsMoveSearchOpen] = useState(false)
+        const [moveSourceNodeId, setMoveSourceNodeId] = useState<number | null>(null)
+        const [moveSuccessTarget, setMoveSuccessTarget] = useState<{ id: number; label: string } | null>(null)
 
         // context
         const paperContext = useMemo(
@@ -493,6 +499,30 @@ const NoteGraph = memo<NoteGraphProps>(
 
         const handleNodeMenuClose = () => {
             setNodeMenuVisible(false)
+        }
+
+        const handleNodeMoveTo = () => {
+            if (selectedNodeId === null) return
+            setNodeMenuVisible(false)
+            setMoveSourceNodeId(selectedNodeId as number)
+            setIsMoveSearchOpen(true)
+        }
+
+        const handleMoveSelectNote = async (note: Note) => {
+            setIsMoveSearchOpen(false)
+            if (moveSourceNodeId === null) return
+
+            const result = await moveNode(moveSourceNodeId, note.id)
+            if (result) {
+                // Find all descendants to remove from flatTree
+                const descendants = findDescendantsByIdInFlatTree(flatTree, moveSourceNodeId)
+                const allIdsToRemove = new Set([moveSourceNodeId, ...descendants.map(d => d.id)])
+
+                setFlatTree(prev => prev.filter(node => !allIdsToRemove.has(node.id)))
+                setEditMode(false)
+                setMoveSuccessTarget({ id: note.id, label: note.label })
+            }
+            setMoveSourceNodeId(null)
         }
 
         const handleNewNodeAddConfirm = () => {
@@ -1059,6 +1089,7 @@ const NoteGraph = memo<NoteGraphProps>(
                         onDisconnectFromParent={handleNodeDisconnectFromParent}
                         onToggleMark={handleNodeToggleMark}
                         onToggleShare={handleNodeToggleShare}
+                        onMoveTo={handleNodeMoveTo}
                         onDelete={handleNodeDelete}
                         onClose={handleNodeMenuClose}
                     />
@@ -1330,6 +1361,29 @@ const NoteGraph = memo<NoteGraphProps>(
                                 )
                             }
                         />
+                        {/* Move search modal */}
+                        {isMoveSearchOpen && (
+                            <SearchModal
+                                isOpen={isMoveSearchOpen}
+                                onClose={() => {
+                                    setIsMoveSearchOpen(false)
+                                    setMoveSourceNodeId(null)
+                                }}
+                                onSelectNote={handleMoveSelectNote}
+                                mode="select"
+                                excludeNoteId={noteDetail?.note_id}
+                            />
+                        )}
+
+                        {/* Move success modal */}
+                        {moveSuccessTarget && (
+                            <MoveSuccessModal
+                                isOpen={true}
+                                onClose={() => setMoveSuccessTarget(null)}
+                                targetNoteId={moveSuccessTarget.id}
+                                targetNoteLabel={moveSuccessTarget.label}
+                            />
+                        )}
                     </>
                 </div>
             </PaperContext>
