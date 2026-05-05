@@ -972,6 +972,7 @@ const NoteGraph = memo<NoteGraphProps>(
                 <div className="h-full bg-black">
                     <svg
                         ref={paperRef}
+                        data-testid="note-graph"
                         width={paperSize.width}
                         height={paperSize.height}
                         // ⭐ viewBox 会先应用 x 和 y，然后才应用 width 和 height

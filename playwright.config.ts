@@ -13,13 +13,19 @@ dotenv.config({ path: path.resolve(__dirname, '.env.test') })
 export default defineConfig({
     testDir: './tests',
     /* Run tests in files in parallel */
-    fullyParallel: true,
+    // fullyParallel: true,
     /* Fail the build on CI if you accidentally left test.only in the source code. */
     forbidOnly: !!process.env.CI,
     /* Retry on CI only */
     retries: process.env.CI ? 2 : 0,
     /* Opt out of parallel tests on CI. */
-    workers: process.env.CI ? 1 : undefined,
+    // workers: process.env.CI ? 1 : undefined,
+    // 只使用一个 worker 以避免资源竞争导致的测试不稳定，尤其是当测试涉及到共享资源（如数据库、文件系统等）时。
+    workers: 1,
+    timeout: 30000, // 设置测试的默认超时时间为 30 秒
+    expect:{
+        timeout: 5000, // 设置断言的默认超时时间为 5 秒
+    },
     /* Reporter to use. See https://playwright.dev/docs/test-reporters */
     reporter: 'html',
     /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
