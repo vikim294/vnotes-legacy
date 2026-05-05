@@ -1,6 +1,28 @@
 import { expect, type Page } from '@playwright/test'
 
 /**
+ * Authenticate on the directory page.
+ * Sets up a prompt dialog handler for the auth token, navigates to `/`,
+ * clicks the "输入密钥" (enter key) button, and waits for successful
+ * authentication (redirect to `/` with SVG graph and edit mode visible).
+ *
+ * Each Playwright test gets a fresh page/context, so `page.on('dialog')`
+ * does not leak between tests.
+ */
+export async function login(page: Page) {
+  page.on('dialog', async (dialog) => {
+    if (dialog.type() !== 'prompt') throw new Error(`Unexpected dialog type: ${dialog.type()}`)
+    await dialog.accept(process.env.TEST_SECRET!)
+  })
+
+  await page.goto('/')
+  await page.getByRole('button', { name: '输入密钥' }).click()
+  await expect(page).toHaveURL('/')
+  await expect(page.getByRole('button', { name: 'edit mode' })).toBeVisible()
+  await expect(page.getByTestId('note-graph')).toBeVisible()
+}
+
+/**
  * Create a node on the directory page.
  * Enters edit mode, opens the add-node modal, fills the label, optionally
  * checks "detail node", confirms, saves, and verifies the node appears.

@@ -1,108 +1,73 @@
-import { test, expect } from '@playwright/test'
+import { test, expect, type Page } from '@playwright/test'
+import { createNode, deleteNode, login } from './helpers/vnote'
 
 test.describe('Note search', () => {
-  const searchQuery = 'test'
-
   test.beforeEach(async ({ page }) => {
-    page.on('dialog', async (dialog) => {
-      expect(dialog.type()).toBe('prompt')
-      await dialog.accept(process.env.TEST_SECRET!)
-    })
+    await login(page)
   })
 
   test('search and navigate to a note', async ({ page }) => {
-    // Navigate to directory page and authenticate
-    await page.goto('/')
-    await page.getByRole('button', { name: '输入密钥' }).click()
-    await expect(page.getByRole('button', { name: 'edit mode' })).toBeVisible()
+    // Create nodes so the test is self-contained
+    const prefix = `search-${crypto.randomUUID().slice(0, 8)}`
+    const dirLabel = `${prefix}-dir`
+    const detailLabel = `${prefix}-detail`
+    await createNode(page, dirLabel)
+    await createNode(page, detailLabel, { isDetail: true })
 
-    // Open search modal
-    await page
-      .locator('button')
-      .filter({ has: page.locator('svg.lucide-search') })
-      .click()
-    await expect(page.getByText('Start typing to search for notes')).toBeVisible()
+    await openSearchModal(page)
 
-    // Type search query
-    await page.getByPlaceholder('Search notes...').fill(searchQuery)
-
-    // Wait for debounce (200ms) + API response
-    await page.waitForTimeout(500)
+    // Search by the shared prefix — both nodes should appear
+    await page.getByPlaceholder('Search notes...').fill(prefix)
     await expect(page.locator('ul li').first()).toBeVisible({ timeout: 5000 })
 
-    // Verify each result has an icon (emerald for detail, blue for directory)
+    // Verify both nodes appear with correct icons (blue for directory, emerald for detail)
     const resultCount = await page.locator('ul li').count()
-    expect(resultCount).toBeGreaterThan(0)
+    expect(resultCount).toBeGreaterThanOrEqual(2)
 
     const emeraldCount = await page.locator('ul li svg.text-emerald-400').count()
     const blueCount = await page.locator('ul li svg.text-blue-400').count()
     expect(emeraldCount + blueCount).toBe(resultCount)
+    expect(emeraldCount).toBeGreaterThanOrEqual(1)
+    expect(blueCount).toBeGreaterThanOrEqual(1)
 
-    // Click the first search result
-    await page.locator('ul li button').first().click()
+    await expect(page.locator('ul li').filter({ hasText: dirLabel })).toBeVisible()
+    await expect(page.locator('ul li').filter({ hasText: detailLabel })).toBeVisible()
 
-    // Verify navigation to note detail page
+    // Click the detail node result — only detail nodes navigate to detail page
+    await page.locator('ul li').filter({ hasText: detailLabel }).locator('button').click()
     await expect(page).toHaveURL(/\/noteDetails\/\d+/)
+    await expect(page.getByTestId('note-graph')).toBeVisible()
 
-    // Verify detail page loads (SVG visible)
-    await expect(page.locator('svg').first()).toBeVisible()
+    // Navigate back and clean up
+    await page.getByTitle('Go back').click()
+    await expect(page).toHaveURL('/')
+    await deleteNode(page, detailLabel)
+    await deleteNode(page, dirLabel)
   })
 
   test('show no results for nonsense query', async ({ page }) => {
-    await page.goto('/')
-    await page.getByRole('button', { name: '输入密钥' }).click()
-    await expect(page.getByRole('button', { name: 'edit mode' })).toBeVisible()
+    await openSearchModal(page)
 
-    // Open search modal
-    await page
-      .locator('button')
-      .filter({ has: page.locator('svg.lucide-search') })
-      .click()
-    await expect(page.getByText('Start typing to search for notes')).toBeVisible()
-
-    // Type nonsense query
+    // Type nonsense query — assertion below auto-retries up to 5s,
+    // covering the 200ms debounce + API round-trip
     await page.getByPlaceholder('Search notes...').fill('xyznonexistent123456')
-
-    // Wait for debounce + API response
-    await page.waitForTimeout(500)
 
     // Verify "No notes found" appears
     await expect(page.getByText('No notes found')).toBeVisible()
   })
 
   test('close via X button', async ({ page }) => {
-    await page.goto('/')
-    await page.getByRole('button', { name: '输入密钥' }).click()
-    await expect(page.getByRole('button', { name: 'edit mode' })).toBeVisible()
-
-    // Open search modal
-    await page
-      .locator('button')
-      .filter({ has: page.locator('svg.lucide-search') })
-      .click()
-    await expect(page.getByText('Start typing to search for notes')).toBeVisible()
+    await openSearchModal(page)
 
     // Click X button in modal header
-    await page
-      .locator('button')
-      .filter({ has: page.locator('svg.lucide-x') })
-      .click()
+    await closeSearchModal(page)
 
     // Verify modal dismissed
     await expect(page.getByText('Start typing to search for notes')).not.toBeVisible()
   })
 
   test('close via Escape key', async ({ page }) => {
-    await page.goto('/')
-    await page.getByRole('button', { name: '输入密钥' }).click()
-    await expect(page.getByRole('button', { name: 'edit mode' })).toBeVisible()
-
-    // Open search modal
-    await page
-      .locator('button')
-      .filter({ has: page.locator('svg.lucide-search') })
-      .click()
-    await expect(page.getByText('Start typing to search for notes')).toBeVisible()
+    await openSearchModal(page)
 
     // Press Escape
     await page.keyboard.press('Escape')
@@ -112,16 +77,7 @@ test.describe('Note search', () => {
   })
 
   test('mask click does not close modal', async ({ page }) => {
-    await page.goto('/')
-    await page.getByRole('button', { name: '输入密钥' }).click()
-    await expect(page.getByRole('button', { name: 'edit mode' })).toBeVisible()
-
-    // Open search modal
-    await page
-      .locator('button')
-      .filter({ has: page.locator('svg.lucide-search') })
-      .click()
-    await expect(page.getByText('Start typing to search for notes')).toBeVisible()
+    await openSearchModal(page)
 
     // Click the dark overlay background (top-left corner, outside modal content)
     await page.locator('.fixed.inset-0.z-50').click({ position: { x: 10, y: 10 } })
@@ -130,15 +86,12 @@ test.describe('Note search', () => {
     await expect(page.getByText('Start typing to search for notes')).toBeVisible()
 
     // Close via X button for cleanup
-    await page
-      .locator('button')
-      .filter({ has: page.locator('svg.lucide-x') })
-      .click()
+    await closeSearchModal(page)
     await expect(page.getByText('Start typing to search for notes')).not.toBeVisible()
   })
 
   test('unauthorized user cannot access search', async ({ browser }) => {
-    // Create a new context without auth token (no localStorage)
+    // Create a fresh context with no localStorage (no auth token)
     const context = await browser.newContext()
     const page = await context.newPage()
 
@@ -149,3 +102,25 @@ test.describe('Note search', () => {
     await context.close()
   })
 })
+
+/**
+ * Open the search modal from the directory page toolbar.
+ * Clicks the search icon button and waits for the modal to render.
+ */
+async function openSearchModal(page: Page) {
+  await page
+    .locator('button')
+    .filter({ has: page.locator('svg.lucide-search') })
+    .click()
+  await expect(page.getByText('Start typing to search for notes')).toBeVisible()
+}
+
+/**
+ * Close the search modal by clicking the X button in the modal header.
+ */
+async function closeSearchModal(page: Page) {
+  await page
+    .locator('button')
+    .filter({ has: page.locator('svg.lucide-x') })
+    .click()
+}

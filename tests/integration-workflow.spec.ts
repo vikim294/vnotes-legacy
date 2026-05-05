@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { createNode, deleteNode, editNodeLabel } from './helpers/vnote'
+import { createNode, deleteNode, editNodeLabel, login } from './helpers/vnote'
 
 test('full integration workflow', async ({ page }) => {
   const detailLabel = `int-detail-${crypto.randomUUID()}`
@@ -9,16 +9,7 @@ test('full integration workflow', async ({ page }) => {
   // ==================================================================
   // 1. Authenticate and land on home page
   // ==================================================================
-  page.on('dialog', async (dialog) => {
-    expect(dialog.type()).toBe('prompt')
-    await dialog.accept(process.env.TEST_SECRET!)
-  })
-
-  await page.goto('/')
-  await page.getByRole('button', { name: '输入密钥' }).click()
-  await expect(page).toHaveURL('/')
-  await expect(page.getByRole('button', { name: 'edit mode' })).toBeVisible()
-  await expect(page.getByTestId('note-graph')).toBeVisible()
+  await login(page)
 
   // ==================================================================
   // 2. Create a detail node on the directory page

@@ -1,21 +1,9 @@
-import { test, expect } from '@playwright/test'
-import { createNode, deleteNode, editNodeLabel } from './helpers/vnote'
+import { test } from '@playwright/test'
+import { createNode, deleteNode, editNodeLabel, login } from './helpers/vnote'
 
 test.describe('node CRUD', () => {
   test.beforeEach(async ({ page }) => {
-    // Each test gets its own page, so page.on does not leak across tests
-    page.on('dialog', async (dialog) => {
-      expect(dialog.type()).toBe('prompt')
-      await dialog.accept(process.env.TEST_SECRET!)
-    })
-
-    await page.goto('/')
-    await page.getByRole('button', { name: '输入密钥' }).click()
-
-    await expect(page).toHaveURL('/')
-    await expect(page.getByRole('button', { name: 'edit mode' })).toBeVisible()
-
-    await expect(page.getByTestId('note-graph')).toBeVisible()
+    await login(page)
   })
 
   test.describe('directory node CRUD', () => {
