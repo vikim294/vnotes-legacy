@@ -1,315 +1,236 @@
 import { test, expect } from '@playwright/test'
+import { login, createNode, deleteNode } from './helpers/vnote'
 
 test.describe('note sharing', () => {
   test.beforeEach(async ({ page }) => {
-    page.on('dialog', async (dialog) => {
-      expect(dialog.type()).toBe('prompt')
-      await dialog.accept(process.env.TEST_SECRET!)
+    await login(page)
+  })
+
+  test('share and unshare a detail node', async ({ page }) => {
+    const label = crypto.randomUUID()
+
+    // Create a detail node
+    await createNode(page, label, { isDetail: true })
+
+    // Enter edit mode
+    await page.getByRole('button', { name: 'edit mode' }).click()
+    await expect(page.getByRole('button', { name: 'add new node' })).toBeVisible()
+
+    // Right-click the created detail node — context menu should show "share"
+    await page.locator('svg tspan').filter({ hasText: label }).first().click({ button: 'right' })
+    await expect(page.getByRole('button', { name: 'share' })).toBeVisible()
+
+    // Click share — this is an immediate API call, no save needed.
+    const nodeGroup = page.locator('svg g').filter({
+      has: page.locator('tspan', { hasText: label }),
     })
-  })
+    await page.getByRole('button', { name: 'share' }).click()
+    await expect(nodeGroup.locator('foreignObject')).toBeVisible()
 
-  test('share and unshare a note', async ({ page }) => {
-    await page.goto('/')
-    await expect(page.getByText('无权限访问')).toBeVisible()
-    await page.getByRole('button', { name: '输入密钥' }).click()
-    await expect(page).toHaveURL('/')
-    await expect(page.getByRole('button', { name: 'edit mode' })).toBeVisible()
+    // Right-click the same node again — "unshare" should now be in the menu
+    await page.locator('svg tspan').filter({ hasText: label }).first().click({ button: 'right' })
+    await expect(page.getByRole('button', { name: 'unshare' })).toBeVisible()
 
-    // Wait for SVG nodes to render
-    await page.locator('svg tspan').first().waitFor({ timeout: 10000 })
-
-    // Enter edit mode
-    await page.getByRole('button', { name: 'edit mode' }).click()
-    await page.waitForTimeout(500)
-
-    // Find a detail node: right-click each text node until "share" appears in the menu
-    const nodeCount = await page.locator('svg tspan').count()
-    let detailNodeIndex = -1
-
-    for (let i = 0; i < nodeCount; i++) {
-      const node = page.locator('svg g.cursor-pointer').nth(i)
-      await node.click({ button: 'right', force: true })
-      await page.waitForTimeout(300)
-
-      if (
-        await page
-          .getByRole('button', { name: 'share' })
-          .isVisible()
-          .catch(() => false)
-      ) {
-        detailNodeIndex = i
-        // Click share
-        await page.getByRole('button', { name: 'share' }).click()
-        await page.waitForTimeout(500)
-        break
-      }
-
-      // Close the context menu by clicking the fixed overlay
-      await page.mouse.click(5, 5)
-      await page.waitForTimeout(200)
-    }
-
-    expect(detailNodeIndex).toBeGreaterThanOrEqual(0)
-
-    // Verify share icon (foreignObject) appears in the SVG
-    await expect(page.locator('svg foreignObject').first()).toBeVisible({ timeout: 5000 })
-
-    // Right-click the same node again to verify "unshare" is now in the menu
-    await page
-      .locator('svg g.cursor-pointer')
-      .nth(detailNodeIndex)
-      .click({ button: 'right', force: true })
-    await page.waitForTimeout(300)
-
-    const unshareButton = page.getByRole('button', { name: 'unshare' })
-    await expect(unshareButton).toBeVisible()
-    await unshareButton.click()
-    await page.waitForTimeout(500)
-
-    // Verify share icon disappears
-    await expect(page.locator('svg foreignObject').first()).toHaveCount(0)
-  })
-
-  test('shared note is publicly accessible', async ({ page, browser }) => {
-    await page.goto('/')
-    await expect(page.getByText('无权限访问')).toBeVisible()
-    await page.getByRole('button', { name: '输入密钥' }).click()
-    await expect(page).toHaveURL('/')
-    await expect(page.getByRole('button', { name: 'edit mode' })).toBeVisible()
-
-    // Wait for SVG nodes to render
-    await page.locator('svg tspan').first().waitFor({ timeout: 10000 })
-
-    // Enter edit mode
-    await page.getByRole('button', { name: 'edit mode' }).click()
-    await page.waitForTimeout(500)
-
-    // Find a detail node and share it
-    const nodeCount = await page.locator('svg tspan').count()
-    let detailNodeIndex = -1
-
-    for (let i = 0; i < nodeCount; i++) {
-      const node = page.locator('svg g.cursor-pointer').nth(i)
-      await node.click({ button: 'right', force: true })
-      await page.waitForTimeout(300)
-
-      if (
-        await page
-          .getByRole('button', { name: 'share' })
-          .isVisible()
-          .catch(() => false)
-      ) {
-        detailNodeIndex = i
-        await page.getByRole('button', { name: 'share' }).click()
-        await page.waitForTimeout(500)
-        break
-      }
-
-      await page.mouse.click(5, 5)
-      await page.waitForTimeout(200)
-    }
-
-    expect(detailNodeIndex).toBeGreaterThanOrEqual(0)
-    await expect(page.locator('svg foreignObject').first()).toBeVisible({ timeout: 5000 })
+    await page.getByRole('button', { name: 'unshare' }).click()
+    await expect(nodeGroup.locator('foreignObject')).toHaveCount(0)
 
     // Exit edit mode
     await page.getByRole('button', { name: 'exit' }).click()
-    await page.waitForTimeout(300)
 
-    // Switch to select mode so double-click navigates to detail page
+    // Cleanup
+    await deleteNode(page, label)
+  })
+
+  test('shared note is publicly accessible without auth', async ({ page, browser }) => {
+    const label = crypto.randomUUID()
+
+    // Create a detail node
+    await createNode(page, label, { isDetail: true })
+
+    // Enter edit mode
+    await page.getByRole('button', { name: 'edit mode' }).click()
+    await expect(page.getByRole('button', { name: 'add new node' })).toBeVisible()
+
+    // Right-click and share the node
+    await page.locator('svg tspan').filter({ hasText: label }).first().click({ button: 'right' })
+    await expect(page.getByRole('button', { name: 'share' })).toBeVisible()
+    const nodeGroup = page.locator('svg g').filter({
+      has: page.locator('tspan', { hasText: label }),
+    })
+    await page.getByRole('button', { name: 'share' }).click()
+    await expect(nodeGroup.locator('foreignObject')).toBeVisible()
+
+    // Exit edit mode
+    await page.getByRole('button', { name: 'exit' }).click()
+    await expect(page.getByRole('button', { name: 'edit mode' })).toBeVisible()
+
+    // Switch to select mode so double-click navigates to the detail page
     await page.getByRole('button', { name: 'select mode' }).click()
-    await page.waitForTimeout(200)
 
-    // Double-click the shared node to navigate to its detail page and capture the note ID
-    await page
-      .locator('svg g')
-      .filter({ has: page.locator('tspan') })
-      .nth(detailNodeIndex)
-      .dblclick({ force: true })
+    // Double-click to navigate to the note's detail page
+    await page.locator('svg tspan').filter({ hasText: label }).first().dblclick({ force: true })
     await page.waitForURL(/\/noteDetails\/\d+/, { timeout: 10000 })
 
-    const noteId = page.url().match(/\/noteDetails\/(\d+)/)?.[1]
-    expect(noteId).toBeTruthy()
+    const match = page.url().match(/\/noteDetails\/(\d+)/)
+    expect(match).toBeTruthy()
+    const noteId = match![1]
 
     // Create an incognito context (no auth token) and navigate to the shared note
     const incognitoContext = await browser.newContext()
     const incognitoPage = await incognitoContext.newPage()
-
     await incognitoPage.goto(`/noteDetails/${noteId}`)
 
-    // SVG should load — shared notes are publicly accessible
-    await expect(incognitoPage.locator('svg')).toBeVisible({ timeout: 10000 })
-    // "edit mode" button should NOT be present (allowOperate = false without auth)
+    // Shared notes are publicly accessible — the SVG graph should load
+    await expect(incognitoPage.getByTestId('note-graph')).toBeVisible({
+      timeout: 10000,
+    })
+    // Without auth, edit mode should NOT be available
     await expect(incognitoPage.getByRole('button', { name: 'edit mode' })).not.toBeVisible()
 
     await incognitoContext.close()
+
+    // Navigate back to directory for cleanup
+    await page.goto('/')
+    await expect(page.getByTestId('note-graph')).toBeVisible()
+
+    // Cleanup
+    await deleteNode(page, label)
   })
 
-  test('unshared note redirects unauthorized users', async ({ page, browser }) => {
-    await page.goto('/')
-    await expect(page.getByText('无权限访问')).toBeVisible()
-    await page.getByRole('button', { name: '输入密钥' }).click()
-    await expect(page).toHaveURL('/')
-    await expect(page.getByRole('button', { name: 'edit mode' })).toBeVisible()
+  test('unshared note redirects to unauthorized for unauthenticated users', async ({
+    page,
+    browser,
+  }) => {
+    const label = crypto.randomUUID()
 
-    // Wait for SVG nodes to render
-    await page.locator('svg tspan').first().waitFor({ timeout: 10000 })
+    // Create a detail node (do NOT share it)
+    await createNode(page, label, { isDetail: true })
 
-    // Enter edit mode
-    await page.getByRole('button', { name: 'edit mode' }).click()
-    await page.waitForTimeout(500)
-
-    // Find a detail node, share it, then unshare it
-    const nodeCount = await page.locator('svg tspan').count()
-    let detailNodeIndex = -1
-
-    for (let i = 0; i < nodeCount; i++) {
-      const node = page.locator('svg g.cursor-pointer').nth(i)
-      await node.click({ button: 'right', force: true })
-      await page.waitForTimeout(300)
-
-      if (
-        await page
-          .getByRole('button', { name: 'share' })
-          .isVisible()
-          .catch(() => false)
-      ) {
-        detailNodeIndex = i
-        // Share first
-        await page.getByRole('button', { name: 'share' }).click()
-        await page.waitForTimeout(500)
-
-        // Right-click the same node again and unshare
-        await page.locator('svg g.cursor-pointer').nth(i).click({ button: 'right', force: true })
-        await page.waitForTimeout(300)
-
-        await page.getByRole('button', { name: 'unshare' }).click()
-        await page.waitForTimeout(500)
-        break
-      }
-
-      await page.mouse.click(5, 5)
-      await page.waitForTimeout(200)
-    }
-
-    expect(detailNodeIndex).toBeGreaterThanOrEqual(0)
-
-    // Exit edit mode
-    await page.getByRole('button', { name: 'exit' }).click()
-    await page.waitForTimeout(300)
-
-    // Switch to select mode
+    // Switch to select mode for double-click navigation
     await page.getByRole('button', { name: 'select mode' }).click()
-    await page.waitForTimeout(200)
 
-    // Double-click to navigate to the (now unshared) note's detail page and capture the ID
-    await page
-      .locator('svg g')
-      .filter({ has: page.locator('tspan') })
-      .nth(detailNodeIndex)
-      .dblclick({ force: true })
+    // Double-click the node to navigate to its detail page
+    await page.locator('svg tspan').filter({ hasText: label }).first().dblclick({ force: true })
     await page.waitForURL(/\/noteDetails\/\d+/, { timeout: 10000 })
 
-    const noteId = page.url().match(/\/noteDetails\/(\d+)/)?.[1]
-    expect(noteId).toBeTruthy()
+    const match = page.url().match(/\/noteDetails\/(\d+)/)
+    expect(match).toBeTruthy()
+    const noteId = match![1]
 
-    // Create incognito context and navigate to the unshared note
+    // Create incognito context (no auth token) and access the unshared note
     const incognitoContext = await browser.newContext()
     const incognitoPage = await incognitoContext.newPage()
-
     await incognitoPage.goto(`/noteDetails/${noteId}`)
 
-    // Unshared notes should redirect to unauthorized
-    await expect(incognitoPage.getByText('无权限访问')).toBeVisible({ timeout: 10000 })
+    // Unshared notes should redirect to unauthorized page
+    await expect(incognitoPage.getByText('无权限访问')).toBeVisible({
+      timeout: 10000,
+    })
 
     await incognitoContext.close()
+
+    // Navigate back to directory for cleanup
+    await page.goto('/')
+    await expect(page.getByTestId('note-graph')).toBeVisible()
+
+    // Cleanup
+    await deleteNode(page, label)
   })
 
-  test('share option only appears for detail nodes in directory graph', async ({ page }) => {
-    await page.goto('/')
-    await expect(page.getByText('无权限访问')).toBeVisible()
-    await page.getByRole('button', { name: '输入密钥' }).click()
-    await expect(page).toHaveURL('/')
-    await expect(page.getByRole('button', { name: 'edit mode' })).toBeVisible()
+  test('share option NOT visible for non-detail nodes in directory graph', async ({ page }) => {
+    const label = crypto.randomUUID()
 
-    // Wait for SVG nodes to render
-    await page.locator('svg tspan').first().waitFor({ timeout: 10000 })
+    await createNode(page, label)
 
     // Enter edit mode
     await page.getByRole('button', { name: 'edit mode' }).click()
-    await page.waitForTimeout(500)
+    await expect(page.getByRole('button', { name: 'add new node' })).toBeVisible()
 
-    // Test 1: Non-detail nodes should NOT show "share" in the context menu
-    const nodeCount = await page.locator('svg tspan').count()
-    let foundNonDetail = false
-    let detailNodeIndex = -1
+    // Right-click the regular node — "share" should NOT be in the menu
+    await page.locator('svg tspan').filter({ hasText: label }).first().click({ button: 'right' })
+    await expect(page.getByRole('button', { name: 'add child node' })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'share' })).not.toBeVisible()
 
-    for (let i = 0; i < nodeCount; i++) {
-      const node = page.locator('svg g.cursor-pointer').nth(i)
-      await node.click({ button: 'right', force: true })
-      await page.waitForTimeout(300)
+    // Dismiss the context menu by clicking the full-screen overlay
+    await page.mouse.click(1, 1)
+    await expect(page.getByRole('button', { name: 'add child node' })).not.toBeVisible()
 
-      const hasAddChild = await page
-        .getByRole('button', { name: 'add child node' })
-        .isVisible()
-        .catch(() => false)
-      const hasShare = await page
-        .getByRole('button', { name: 'share' })
-        .isVisible()
-        .catch(() => false)
-
-      if (!foundNonDetail && hasAddChild) {
-        // Non-detail node: "share" should NOT be visible
-        await expect(page.getByRole('button', { name: 'share' })).not.toBeVisible()
-        foundNonDetail = true
-      }
-
-      if (detailNodeIndex === -1 && hasShare) {
-        detailNodeIndex = i
-      }
-
-      // Close the menu
-      await page.mouse.click(5, 5)
-      await page.waitForTimeout(200)
-
-      if (foundNonDetail && detailNodeIndex >= 0) break
-    }
-
-    expect(foundNonDetail).toBe(true)
-    expect(detailNodeIndex).toBeGreaterThanOrEqual(0)
-
-    // Test 2: Detail graph should NOT show "share" in context menu
     // Exit edit mode
     await page.getByRole('button', { name: 'exit' }).click()
-    await page.waitForTimeout(300)
 
-    // Switch to select mode
+    await deleteNode(page, label)
+  })
+
+  test('share option visible for detail nodes in directory graph', async ({ page }) => {
+    const label = crypto.randomUUID()
+
+    await createNode(page, label, { isDetail: true })
+
+    // Enter edit mode
+    await page.getByRole('button', { name: 'edit mode' }).click()
+    await expect(page.getByRole('button', { name: 'add new node' })).toBeVisible()
+
+    // Right-click the detail node — "share" SHOULD be in the menu
+    await page.locator('svg tspan').filter({ hasText: label }).first().click({ button: 'right' })
+    await expect(page.getByRole('button', { name: 'share' })).toBeVisible()
+
+    // Dismiss the context menu by clicking the full-screen overlay
+    await page.mouse.click(1, 1)
+
+    // Exit edit mode
+    await page.getByRole('button', { name: 'exit' }).click()
+
+    await deleteNode(page, label)
+  })
+
+  test('share option NOT visible in detail graph', async ({ page }) => {
+    const detailLabel = crypto.randomUUID()
+    const childLabel = crypto.randomUUID()
+
+    // Create a detail node in directory
+    await createNode(page, detailLabel, { isDetail: true })
+
+    // Switch to select mode for double-click navigation
     await page.getByRole('button', { name: 'select mode' }).click()
-    await page.waitForTimeout(200)
+    await expect(page.getByRole('button', { name: 'edit mode' })).toBeVisible()
 
-    // Double-click the detail node to navigate to its detail page
+    // Navigate to the detail page
     await page
-      .locator('svg g')
-      .filter({ has: page.locator('tspan') })
-      .nth(detailNodeIndex)
+      .locator('svg tspan')
+      .filter({ hasText: detailLabel })
+      .first()
       .dblclick({ force: true })
     await page.waitForURL(/\/noteDetails\/\d+/, { timeout: 10000 })
+    await expect(page.getByTestId('note-graph')).toBeVisible()
 
-    // Wait for detail graph SVG nodes to render
-    await page.locator('svg tspan').first().waitFor({ timeout: 10000 })
-
-    // Enter edit mode in detail graph
+    // Create a child node in the detail graph (self-contained)
     await page.getByRole('button', { name: 'edit mode' }).click()
-    await page.waitForTimeout(500)
+    await expect(page.getByRole('button', { name: 'add new node' })).toBeVisible()
+    await page.getByRole('button', { name: 'add new node' }).click()
+    await expect(page.getByText('添加新结点')).toBeVisible()
+    await page.locator('textarea').fill(childLabel)
+    await page.getByRole('button', { name: '确认' }).click()
+    await page.getByRole('button', { name: 'save' }).click()
+    await expect(page.getByRole('button', { name: 'edit mode' })).toBeVisible({ timeout: 15000 })
 
-    // Right-click a node in the detail graph
-    const detailNodeCount = await page.locator('svg tspan').count()
-    expect(detailNodeCount).toBeGreaterThan(0)
+    // Enter edit mode and right-click the child node
+    await page.getByRole('button', { name: 'edit mode' }).click()
+    await expect(page.getByRole('button', { name: 'add new node' })).toBeVisible()
 
-    await page.locator('svg g.cursor-pointer').first().click({ button: 'right', force: true })
-    await page.waitForTimeout(300)
-
-    // "share" should NOT be in the menu in detail graph
+    await page
+      .locator('svg tspan')
+      .filter({ hasText: childLabel })
+      .first()
+      .click({ button: 'right' })
+    await expect(page.getByRole('button', { name: 'edit text' })).toBeVisible()
     await expect(page.getByRole('button', { name: 'share' })).not.toBeVisible()
+
+    // Dismiss menu, exit edit mode, and navigate back to directory for cleanup
+    await page.mouse.click(1, 1)
+    await page.getByRole('button', { name: 'exit' }).click()
+    await page.goto('/')
+    await expect(page.getByTestId('note-graph')).toBeVisible()
+
+    await deleteNode(page, detailLabel)
   })
 })
