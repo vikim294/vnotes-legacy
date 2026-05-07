@@ -1382,7 +1382,7 @@ const NoteGraph = memo<NoteGraphProps>(
                                 }}
                                 onSelectNote={handleMoveSelectNote}
                                 mode="select"
-                                excludeNoteId={noteDetail?.note_id}
+                                excludeNoteId={noteDetail?.noteId}
                             />
                         )}
 

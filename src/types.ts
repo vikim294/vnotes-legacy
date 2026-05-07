@@ -32,7 +32,7 @@ export interface NoteDetailData {
   /**
    * note id
    */
-  note_id: number;
+  noteId: number;
 }
 
 export interface Point {
