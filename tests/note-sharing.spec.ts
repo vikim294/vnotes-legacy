@@ -1,5 +1,12 @@
 import { test, expect } from '@playwright/test'
-import { login, createNode, deleteNode } from './helpers/vnote'
+import {
+  login,
+  createNode,
+  deleteNode,
+  enterEditMode,
+  goToDirectory,
+  navigateToDetail,
+} from './helpers/vnote'
 
 test.describe('note sharing', () => {
   test.beforeEach(async ({ page }) => {
@@ -13,8 +20,7 @@ test.describe('note sharing', () => {
     await createNode(page, label, { isDetail: true })
 
     // Enter edit mode
-    await page.getByRole('button', { name: 'edit mode' }).click()
-    await expect(page.getByRole('button', { name: 'add new node' })).toBeVisible()
+    await enterEditMode(page)
 
     // Right-click the created detail node — context menu should show "share"
     await page.locator('svg tspan').filter({ hasText: label }).first().click({ button: 'right' })
@@ -48,8 +54,7 @@ test.describe('note sharing', () => {
     await createNode(page, label, { isDetail: true })
 
     // Enter edit mode
-    await page.getByRole('button', { name: 'edit mode' }).click()
-    await expect(page.getByRole('button', { name: 'add new node' })).toBeVisible()
+    await enterEditMode(page)
 
     // Right-click and share the node
     await page.locator('svg tspan').filter({ hasText: label }).first().click({ button: 'right' })
@@ -64,12 +69,7 @@ test.describe('note sharing', () => {
     await page.getByRole('button', { name: 'exit' }).click()
     await expect(page.getByRole('button', { name: 'edit mode' })).toBeVisible()
 
-    // Switch to select mode so double-click navigates to the detail page
-    await page.getByRole('button', { name: 'select mode' }).click()
-
-    // Double-click to navigate to the note's detail page
-    await page.locator('svg tspan').filter({ hasText: label }).first().dblclick({ force: true })
-    await page.waitForURL(/\/noteDetails\/\d+/, { timeout: 10000 })
+    await navigateToDetail(page, label)
 
     const match = page.url().match(/\/noteDetails\/(\d+)/)
     expect(match).toBeTruthy()
@@ -90,8 +90,7 @@ test.describe('note sharing', () => {
     await incognitoContext.close()
 
     // Navigate back to directory for cleanup
-    await page.goto('/')
-    await expect(page.getByTestId('note-graph')).toBeVisible()
+    await goToDirectory(page)
 
     // Cleanup
     await deleteNode(page, label)
@@ -107,11 +106,7 @@ test.describe('note sharing', () => {
     await createNode(page, label, { isDetail: true })
 
     // Switch to select mode for double-click navigation
-    await page.getByRole('button', { name: 'select mode' }).click()
-
-    // Double-click the node to navigate to its detail page
-    await page.locator('svg tspan').filter({ hasText: label }).first().dblclick({ force: true })
-    await page.waitForURL(/\/noteDetails\/\d+/, { timeout: 10000 })
+    await navigateToDetail(page, label)
 
     const match = page.url().match(/\/noteDetails\/(\d+)/)
     expect(match).toBeTruthy()
@@ -130,8 +125,7 @@ test.describe('note sharing', () => {
     await incognitoContext.close()
 
     // Navigate back to directory for cleanup
-    await page.goto('/')
-    await expect(page.getByTestId('note-graph')).toBeVisible()
+    await goToDirectory(page)
 
     // Cleanup
     await deleteNode(page, label)
@@ -143,8 +137,7 @@ test.describe('note sharing', () => {
     await createNode(page, label)
 
     // Enter edit mode
-    await page.getByRole('button', { name: 'edit mode' }).click()
-    await expect(page.getByRole('button', { name: 'add new node' })).toBeVisible()
+    await enterEditMode(page)
 
     // Right-click the regular node — "share" should NOT be in the menu
     await page.locator('svg tspan').filter({ hasText: label }).first().click({ button: 'right' })
@@ -167,8 +160,7 @@ test.describe('note sharing', () => {
     await createNode(page, label, { isDetail: true })
 
     // Enter edit mode
-    await page.getByRole('button', { name: 'edit mode' }).click()
-    await expect(page.getByRole('button', { name: 'add new node' })).toBeVisible()
+    await enterEditMode(page)
 
     // Right-click the detail node — "share" SHOULD be in the menu
     await page.locator('svg tspan').filter({ hasText: label }).first().click({ button: 'right' })
@@ -190,32 +182,12 @@ test.describe('note sharing', () => {
     // Create a detail node in directory
     await createNode(page, detailLabel, { isDetail: true })
 
-    // Switch to select mode for double-click navigation
-    await page.getByRole('button', { name: 'select mode' }).click()
-    await expect(page.getByRole('button', { name: 'edit mode' })).toBeVisible()
+    await navigateToDetail(page, detailLabel)
 
-    // Navigate to the detail page
-    await page
-      .locator('svg tspan')
-      .filter({ hasText: detailLabel })
-      .first()
-      .dblclick({ force: true })
-    await page.waitForURL(/\/noteDetails\/\d+/, { timeout: 10000 })
-    await expect(page.getByTestId('note-graph')).toBeVisible()
-
-    // Create a child node in the detail graph (self-contained)
-    await page.getByRole('button', { name: 'edit mode' }).click()
-    await expect(page.getByRole('button', { name: 'add new node' })).toBeVisible()
-    await page.getByRole('button', { name: 'add new node' }).click()
-    await expect(page.getByText('添加新结点')).toBeVisible()
-    await page.locator('textarea').fill(childLabel)
-    await page.getByRole('button', { name: '确认' }).click()
-    await page.getByRole('button', { name: 'save' }).click()
-    await expect(page.getByRole('button', { name: 'edit mode' })).toBeVisible({ timeout: 15000 })
+    await createNode(page, childLabel)
 
     // Enter edit mode and right-click the child node
-    await page.getByRole('button', { name: 'edit mode' }).click()
-    await expect(page.getByRole('button', { name: 'add new node' })).toBeVisible()
+    await enterEditMode(page)
 
     await page
       .locator('svg tspan')
@@ -228,8 +200,7 @@ test.describe('note sharing', () => {
     // Dismiss menu, exit edit mode, and navigate back to directory for cleanup
     await page.mouse.click(1, 1)
     await page.getByRole('button', { name: 'exit' }).click()
-    await page.goto('/')
-    await expect(page.getByTestId('note-graph')).toBeVisible()
+    await goToDirectory(page)
 
     await deleteNode(page, detailLabel)
   })

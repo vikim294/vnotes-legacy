@@ -1,254 +1,315 @@
 import { test, expect } from '@playwright/test'
-
-/**
- * Authenticate the page session by handling the prompt dialog
- * and navigating through the auth flow.
- */
-async function authenticate(page: import('@playwright/test').Page) {
-  page.on('dialog', async (dialog) => {
-    expect(dialog.type()).toBe('prompt')
-    await dialog.accept(process.env.TEST_SECRET!)
-  })
-
-  await page.goto('/')
-
-  if (
-    await page
-      .getByRole('button', { name: 'edit mode' })
-      .isVisible({ timeout: 1000 })
-      .catch(() => false)
-  ) {
-    return
-  }
-
-  await expect(page.getByText('无权限访问')).toBeVisible()
-  await page.getByRole('button', { name: '输入密钥' }).click()
-  await expect(page).toHaveURL('/')
-  await expect(page.getByRole('button', { name: 'edit mode' })).toBeVisible()
-}
-
-/**
- * Navigate to a note detail page by finding a detail node on the directory page.
- * Detail nodes navigate to /noteDetails/:id on double-click in browse mode.
- */
-async function navigateToDetailPage(page: import('@playwright/test').Page) {
-  // Wait for SVG to render
-  await page.locator('svg tspan').first().waitFor({ timeout: 15000 })
-
-  // Enter edit mode so we can right-click to find a detail node
-  await page.getByRole('button', { name: 'edit mode' }).click()
-  await page.waitForTimeout(500)
-
-  // Find a detail node: right-click each g element, check if "share" is in menu
-  // Share only appears for detail nodes in directory graph
-  const nodeCount = await page.locator('svg tspan').count()
-  let detailNodeIndex = -1
-
-  for (let i = 0; i < nodeCount; i++) {
-    const node = page.locator('svg g.cursor-pointer').nth(i)
-    await node.click({ button: 'right', force: true })
-    await page.waitForTimeout(300)
-
-    const hasShare = await page
-      .getByRole('button', { name: 'share' })
-      .isVisible()
-      .catch(() => false)
-
-    if (hasShare) {
-      detailNodeIndex = i
-      // Close the menu by clicking the overlay
-      await page.mouse.click(5, 5)
-      await page.waitForTimeout(200)
-      break
-    }
-
-    // Close the menu
-    await page.mouse.click(5, 5)
-    await page.waitForTimeout(200)
-  }
-
-  expect(detailNodeIndex).toBeGreaterThanOrEqual(0)
-
-  // Exit edit mode and switch to select mode to enable double-click navigation
-  await page.getByRole('button', { name: 'exit' }).click()
-  await page.waitForTimeout(300)
-  await page.getByRole('button', { name: 'select mode' }).click()
-  await page.waitForTimeout(200)
-
-  // Double-click the detail node to navigate to its detail page
-  // In browse/select mode, g elements don't have cursor-pointer class
-  await page
-    .locator('svg g')
-    .filter({ has: page.locator('tspan') })
-    .nth(detailNodeIndex)
-    .dblclick({ force: true })
-  await page.waitForURL(/\/noteDetails\/\d+/, { timeout: 10000 })
-}
+import {
+  login,
+  createNode,
+  createNodeWithoutSave,
+  deleteNode,
+  dragNodeTo,
+  enterEditMode,
+  goToDirectory,
+  navigateToDetail,
+  saveGraph,
+} from './helpers/vnote'
 
 test.describe('Node move functionality', () => {
-  test('move a single node (happy path)', async ({ page }) => {
-    await authenticate(page)
-    await navigateToDetailPage(page)
+  test.beforeEach(async ({ page }) => {
+    await login(page)
+  })
 
-    // Wait for SVG text nodes to render on detail page
-    await page.locator('svg tspan').first().waitFor({ timeout: 15000 })
+  test('"move to" is available in detail graph context menu', async ({ page }) => {
+    const detailLabel = `detail-${crypto.randomUUID()}`
+    const childLabel = `child-${crypto.randomUUID()}`
+
+    await createNode(page, detailLabel, { isDetail: true })
+    await navigateToDetail(page, detailLabel)
+
+    await createNode(page, childLabel)
+
+    // Enter edit mode and right-click the child node
+    await enterEditMode(page)
+
+    await page
+      .locator('svg tspan')
+      .filter({ hasText: childLabel })
+      .first()
+      .click({ button: 'right' })
+
+    // Verify "move to" is visible in the detail graph context menu
+    await expect(page.getByRole('button', { name: 'move to' })).toBeVisible()
+
+    // Dismiss the context menu by clicking the full-screen overlay
+    await page.mouse.click(1, 1)
+    await expect(page.getByRole('button', { name: 'move to' })).not.toBeVisible()
+
+    // Exit edit mode and navigate back to directory for cleanup
+    await page.getByRole('button', { name: 'exit' }).click()
+    await goToDirectory(page)
+
+    await deleteNode(page, detailLabel)
+  })
+
+  test('"move to" is NOT available in directory graph context menu', async ({ page }) => {
+    const label = crypto.randomUUID()
+
+    await createNode(page, label)
 
     // Enter edit mode
-    await page.getByRole('button', { name: 'edit mode' }).click()
+    await enterEditMode(page)
 
-    // Right-click on the first node to open the NodeMenu
-    await page
-      .locator('svg g')
-      .filter({ has: page.locator('tspan') })
-      .first()
-      .click({ button: 'right', force: true })
+    // Right-click the node on the directory graph
+    await page.locator('svg tspan').filter({ hasText: label }).first().click({ button: 'right' })
+    await expect(page.getByRole('button', { name: 'add child node' })).toBeVisible()
 
-    // Verify NodeMenu appears with "move to" option (only in detail graph)
-    await expect(page.getByText('move to')).toBeVisible()
+    // Verify "move to" is NOT present in the directory graph context menu
+    await expect(page.getByRole('button', { name: 'move to' })).not.toBeVisible()
 
-    // Click "move to"
-    await page.getByText('move to').click()
+    // Dismiss the context menu by clicking the full-screen overlay
+    await page.mouse.click(1, 1)
+    await expect(page.getByRole('button', { name: 'add child node' })).not.toBeVisible()
 
-    // Verify SearchModal opens with the select-mode placeholder
-    await expect(page.getByPlaceholder('Search for a note to move to...')).toBeVisible()
+    // Exit edit mode
+    await page.getByRole('button', { name: 'exit' }).click()
 
-    // Type a search query
-    await page.getByPlaceholder('Search for a note to move to...').fill('a')
-
-    // Wait for debounced search (200ms) + API response
-    await page.waitForTimeout(1000)
-
-    // Check for search results
-    const searchResults = page.locator('ul li button')
-    const resultCount = await searchResults.count()
-
-    if (resultCount > 0) {
-      await searchResults.first().click()
-
-      // Verify MoveSuccessModal appears with "Moved successfully"
-      await expect(page.getByText('Moved successfully')).toBeVisible()
-
-      // Click "Close" button
-      await page.getByRole('button', { name: 'Close' }).click()
-
-      // Verify the modal dismisses
-      await expect(page.getByText('Moved successfully')).not.toBeVisible()
-    } else {
-      await page.keyboard.press('Escape')
-    }
+    await deleteNode(page, label)
   })
 
-  test('MoveSuccessModal "Go to check" navigates to target note', async ({ page }) => {
-    await authenticate(page)
-    await navigateToDetailPage(page)
+  test('move a node to another note (happy path)', async ({ page }) => {
+    const sourceLabel = `source-${crypto.randomUUID()}`
+    const targetLabel = `target-${crypto.randomUUID()}`
+    const childLabel = `child-${crypto.randomUUID()}`
 
-    await page.locator('svg tspan').first().waitFor({ timeout: 15000 })
-    await page.getByRole('button', { name: 'edit mode' }).click()
+    // Create two detail nodes at different positions, then save once
+    await enterEditMode(page)
+    await createNodeWithoutSave(page, sourceLabel, { isDetail: true })
+    await dragNodeTo(page, sourceLabel, 300, 200)
+    await createNodeWithoutSave(page, targetLabel, { isDetail: true })
+    await dragNodeTo(page, targetLabel, 600, 400)
+    await saveGraph(page)
+
+    await page.reload()
+    await expect(page.getByTestId('note-graph')).toBeVisible()
+    await expect(page.locator('svg tspan').filter({ hasText: sourceLabel })).toBeVisible()
+
+    await navigateToDetail(page, sourceLabel)
+
+    await createNode(page, childLabel)
+
+    // Enter edit mode, right-click the child node, and click "move to"
+    await enterEditMode(page)
+
     await page
-      .locator('svg g')
-      .filter({ has: page.locator('tspan') })
+      .locator('svg tspan')
+      .filter({ hasText: childLabel })
       .first()
-      .click({ button: 'right', force: true })
-    await expect(page.getByText('move to')).toBeVisible()
-    await page.getByText('move to').click()
+      .click({ button: 'right' })
+    await expect(page.getByRole('button', { name: 'move to' })).toBeVisible()
+
+    await page.getByRole('button', { name: 'move to' }).click()
+
     await expect(page.getByPlaceholder('Search for a note to move to...')).toBeVisible()
-    await page.getByPlaceholder('Search for a note to move to...').fill('a')
-    await page.waitForTimeout(1000)
+    await page.getByPlaceholder('Search for a note to move to...').fill(targetLabel)
 
-    const searchResults = page.locator('ul li button')
-    const resultCount = await searchResults.count()
+    const resultItem = page.locator('ul li button').filter({ hasText: targetLabel })
+    await expect(resultItem).toBeVisible({ timeout: 5000 })
+    await resultItem.click()
 
-    if (resultCount > 0) {
-      await searchResults.first().click()
-      await expect(page.getByText('Moved successfully')).toBeVisible()
+    await expect(page.getByText('Moved successfully')).toBeVisible()
 
-      // Click "Go to check"
-      await page.getByRole('button', { name: 'Go to check' }).click()
+    await page.getByRole('button', { name: 'Close' }).click()
+    await expect(page.getByText('Moved successfully')).not.toBeVisible()
 
-      // Verify navigation to the target note detail page with label query param
-      expect(page.url()).toMatch(/\/noteDetails\/\d+\?label=/)
-      await expect(page.locator('svg')).toBeVisible()
-    } else {
-      await page.keyboard.press('Escape')
-    }
+    // Navigate to target's detail page to verify the node was actually moved.
+    // (handleMoveSelectNote already called setEditMode(false), so we are not in edit mode.)
+    await goToDirectory(page)
+    await navigateToDetail(page, targetLabel)
+    await expect(page.locator('svg tspan').filter({ hasText: childLabel })).toBeVisible()
+
+    // Navigate back to directory for cleanup
+    await goToDirectory(page)
+
+    await deleteNode(page, sourceLabel)
+    await deleteNode(page, targetLabel)
   })
 
-  test('search results in select mode only show detail notes', async ({ page }) => {
-    await authenticate(page)
-    await navigateToDetailPage(page)
+  test('"Go to check" navigates to target note after move', async ({ page }) => {
+    const sourceLabel = `source-${crypto.randomUUID()}`
+    const targetLabel = `target-${crypto.randomUUID()}`
+    const childLabel = `child-${crypto.randomUUID()}`
 
-    await page.locator('svg tspan').first().waitFor({ timeout: 15000 })
-    await page.getByRole('button', { name: 'edit mode' }).click()
+    // Create two detail nodes at different positions, then save once
+    await enterEditMode(page)
+    await createNodeWithoutSave(page, sourceLabel, { isDetail: true })
+    await dragNodeTo(page, sourceLabel, 300, 200)
+    await createNodeWithoutSave(page, targetLabel, { isDetail: true })
+    await dragNodeTo(page, targetLabel, 600, 400)
+    await saveGraph(page)
+
+    await page.reload()
+    await expect(page.getByTestId('note-graph')).toBeVisible()
+    await expect(page.locator('svg tspan').filter({ hasText: sourceLabel })).toBeVisible()
+
+    await navigateToDetail(page, sourceLabel)
+
+    await createNode(page, childLabel)
+
+    // Enter edit mode, right-click child, click "move to"
+    await enterEditMode(page)
+
     await page
-      .locator('svg g')
-      .filter({ has: page.locator('tspan') })
+      .locator('svg tspan')
+      .filter({ hasText: childLabel })
       .first()
-      .click({ button: 'right', force: true })
-    await expect(page.getByText('move to')).toBeVisible()
-    await page.getByText('move to').click()
+      .click({ button: 'right' })
+    await expect(page.getByRole('button', { name: 'move to' })).toBeVisible()
+
+    await page.getByRole('button', { name: 'move to' }).click()
+
+    await expect(page.getByPlaceholder('Search for a note to move to...')).toBeVisible()
+    await page.getByPlaceholder('Search for a note to move to...').fill(targetLabel)
+    const resultItem = page.locator('ul li button').filter({ hasText: targetLabel })
+    await expect(resultItem).toBeVisible({ timeout: 5000 })
+    await resultItem.click()
+
+    await expect(page.getByText('Moved successfully')).toBeVisible()
+
+    // Click "Go to check"
+    await page.getByRole('button', { name: 'Go to check' }).click()
+
+    expect(page.url()).toMatch(/\/noteDetails\/\d+\?label=/)
+    await expect(page.getByTestId('note-graph')).toBeVisible()
+    // Verify the moved node is actually present in target's detail graph
+    await expect(page.locator('svg tspan').filter({ hasText: childLabel })).toBeVisible()
+
+    // Navigate back to directory for cleanup
+    await goToDirectory(page)
+
+    await deleteNode(page, sourceLabel)
+    await deleteNode(page, targetLabel)
+  })
+
+  test('search results in move-to only show detail notes with "detail" badge', async ({ page }) => {
+    const sourceLabel = `move-src-${crypto.randomUUID()}`
+    const targetLabel = `move-tgt-${crypto.randomUUID()}`
+    const regularLabel = `move-reg-${crypto.randomUUID()}`
+    const childLabel = `child-${crypto.randomUUID()}`
+
+    // Create three nodes at different positions, then save once
+    await enterEditMode(page)
+    await createNodeWithoutSave(page, sourceLabel, { isDetail: true })
+    await dragNodeTo(page, sourceLabel, 300, 200)
+    await createNodeWithoutSave(page, targetLabel, { isDetail: true })
+    await dragNodeTo(page, targetLabel, 600, 400)
+    await createNodeWithoutSave(page, regularLabel)
+    await dragNodeTo(page, regularLabel, 450, 600)
+    await saveGraph(page)
+
+    await page.reload()
+    await expect(page.getByTestId('note-graph')).toBeVisible()
+    await expect(page.locator('svg tspan').filter({ hasText: sourceLabel })).toBeVisible()
+
+    await navigateToDetail(page, sourceLabel)
+
+    await createNode(page, childLabel)
+
+    // Enter edit mode, right-click child, click "move to"
+    await enterEditMode(page)
+
+    await page
+      .locator('svg tspan')
+      .filter({ hasText: childLabel })
+      .first()
+      .click({ button: 'right' })
+    await expect(page.getByRole('button', { name: 'move to' })).toBeVisible()
+
+    await page.getByRole('button', { name: 'move to' }).click()
     await expect(page.getByPlaceholder('Search for a note to move to...')).toBeVisible()
 
-    // Type a broad query to get results
-    await page.getByPlaceholder('Search for a note to move to...').fill('a')
-    await page.waitForTimeout(1000)
+    // Search for the common prefix shared by all test nodes
+    await page.getByPlaceholder('Search for a note to move to...').fill('move-')
+    await expect(page.locator('ul li button').first()).toBeVisible({ timeout: 5000 })
 
-    const searchResults = page.locator('ul li button')
-    const count = await searchResults.count()
-    if (count > 0) {
-      // In select mode, only detail notes are shown.
-      // Each detail note result has a "detail" badge.
-      const detailBadges = page.locator('ul li button span:has-text("detail")')
-      const badgeCount = await detailBadges.count()
-      expect(badgeCount).toBe(count)
-    }
+    const resultCount = await page.locator('ul li button').count()
+    expect(resultCount).toBeGreaterThan(0)
 
-    // Get the current note label to verify it is excluded from results.
-    const noteLabel = await page.evaluate(() => {
-      const goBackBtn = document.querySelector('button[title="Go back"]')
-      const toolbar = goBackBtn?.parentElement
-      return toolbar?.querySelector('span')?.textContent?.trim() || ''
-    })
+    // Every result item should have a "detail" badge span
+    const detailBadges = page.locator('ul li button span:has-text("detail")')
+    await expect(detailBadges).toHaveCount(resultCount)
 
-    if (noteLabel) {
-      await page.getByPlaceholder('Search for a note to move to...').fill(noteLabel)
-      await page.waitForTimeout(1000)
+    // Regular node should be excluded from results
+    const resultTexts = await page.locator('ul li button').allTextContents()
+    const regFound = resultTexts.some((text) => text.includes('move-reg'))
+    expect(regFound).toBe(false)
 
-      const resultTexts = await page.locator('ul li button').allTextContents()
-      const found = resultTexts.some((text) => text.includes(noteLabel))
-      expect(found).toBe(false)
-    }
-
+    // Dismiss search modal
     await page.keyboard.press('Escape')
+    await expect(page.getByPlaceholder('Search for a note to move to...')).not.toBeVisible()
+
+    // Navigate back to directory for cleanup
+    await page.getByRole('button', { name: 'exit' }).click()
+    await goToDirectory(page)
+
+    await deleteNode(page, sourceLabel)
+    await deleteNode(page, targetLabel)
+    await deleteNode(page, regularLabel)
   })
 
-  test('"move to" not available in directory graph', async ({ page }) => {
-    await authenticate(page)
+  test('current note is excluded from search results', async ({ page }) => {
+    const sourceLabel = `source-${crypto.randomUUID()}`
+    const targetLabel = `target-${crypto.randomUUID()}`
+    const childLabel = `child-${crypto.randomUUID()}`
 
-    // Stay on the directory page
-    await page.locator('svg tspan').first().waitFor({ timeout: 15000 })
+    // Create two detail nodes at different positions, then save once
+    await enterEditMode(page)
+    await createNodeWithoutSave(page, sourceLabel, { isDetail: true })
+    await dragNodeTo(page, sourceLabel, 300, 200)
+    await createNodeWithoutSave(page, targetLabel, { isDetail: true })
+    await dragNodeTo(page, targetLabel, 600, 400)
+    await saveGraph(page)
 
-    // Enter edit mode
-    await page.getByRole('button', { name: 'edit mode' }).click()
+    await page.reload()
+    await expect(page.getByTestId('note-graph')).toBeVisible()
+    await expect(page.locator('svg tspan').filter({ hasText: sourceLabel })).toBeVisible()
+
+    await navigateToDetail(page, sourceLabel)
+
+    await createNode(page, childLabel)
+
+    // Enter edit mode, right-click child, click "move to"
+    await enterEditMode(page)
+
+    await page
+      .locator('svg tspan')
+      .filter({ hasText: childLabel })
+      .first()
+      .click({ button: 'right' })
+    await expect(page.getByRole('button', { name: 'move to' })).toBeVisible()
+
+    await page.getByRole('button', { name: 'move to' }).click()
+    await expect(page.getByPlaceholder('Search for a note to move to...')).toBeVisible()
+
+    // First verify the search infrastructure works by searching for target
+    await page.getByPlaceholder('Search for a note to move to...').fill(targetLabel)
+    await expect(page.locator('ul li button').first()).toBeVisible({ timeout: 5000 })
+
+    // Now search for the source note's label — it should NOT appear in results
+    await page.getByPlaceholder('Search for a note to move to...').clear()
+    await page.getByPlaceholder('Search for a note to move to...').fill(sourceLabel)
+    // Debounced search (200ms) + API call — must wait for it to settle
     await page.waitForTimeout(500)
 
-    // Right-click on a node to open NodeMenu
-    await page.locator('svg g.cursor-pointer').first().click({ button: 'right', force: true })
-    await page.waitForTimeout(300)
+    const resultTexts = await page.locator('ul li button').allTextContents()
+    const selfFound = resultTexts.some((text) => text.includes(sourceLabel))
+    expect(selfFound).toBe(false)
 
-    // Verify NodeMenu is open by checking for a common menu item
-    await expect(page.getByText('edit text')).toBeVisible()
+    // Dismiss search modal
+    await page.keyboard.press('Escape')
+    await expect(page.getByPlaceholder('Search for a note to move to...')).not.toBeVisible()
 
-    // Verify "move to" is NOT present in the directory graph NodeMenu
-    await expect(page.getByText('move to')).not.toBeVisible()
-  })
+    // Navigate back to directory for cleanup
+    await page.getByRole('button', { name: 'exit' }).click()
+    await goToDirectory(page)
 
-  test('auth enforcement redirects unauthenticated users', async ({ browser }) => {
-    const context = await browser.newContext()
-    const page = await context.newPage()
-
-    await page.goto('/')
-    await expect(page).toHaveURL('/unauthorized')
-
-    await context.close()
+    await deleteNode(page, sourceLabel)
+    await deleteNode(page, targetLabel)
   })
 })
