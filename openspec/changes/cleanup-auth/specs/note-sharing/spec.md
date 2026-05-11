@@ -8,7 +8,7 @@ The system SHALL allow authenticated users (with a token in localStorage) to acc
 
 - **WHEN** a user with a token in localStorage navigates to `/noteDetails/:id` for a note with `isShared === false`
 - **THEN** the system SHALL verify the token via `verifyToken`
-- **THEN** if valid, the system SHALL pass `allowAccess=true` to NoteGraph
+- **THEN** if valid, the system SHALL pass `allowOperate=true` to NoteGraph
 - **THEN** the system SHALL load and display the note normally
 
 #### Scenario: Unauthenticated user accesses non-shared note
@@ -20,7 +20,7 @@ The system SHALL allow authenticated users (with a token in localStorage) to acc
 
 - **WHEN** a user without a token in localStorage navigates to `/noteDetails/:id` for a note with `isShared === true`
 - **THEN** the system SHALL load and display the note normally
-- **THEN** the system SHALL pass `allowAccess=false` to NoteGraph
+- **THEN** the system SHALL pass `allowOperate=false` to NoteGraph
 - **THEN** NoteGraph SHALL hide action buttons (edit, search, etc.)
 
 ## REMOVED Requirements
@@ -29,8 +29,3 @@ The system SHALL allow authenticated users (with a token in localStorage) to acc
 
 **Reason**: Replaced by per-note `isShared` access control.
 **Migration**: Remove `PUBLIC_PATHS` from AuthGuard; NoteDetail handles access via `isShared`.
-
-### Requirement: Token verification directory graph access
-
-**Reason**: AuthGuard no longer verifies tokens with backend on route mount; a simple localStorage existence check is sufficient.
-**Migration**: Remove `verifyToken` call from AuthGuard; frontend assumes token validity, backend enforces on mutations.

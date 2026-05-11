@@ -6,8 +6,8 @@ The note-sharing feature now handles access control via the `isShared` field per
 
 - Remove hard-coded `PUBLIC_PATHS` from AuthGuard (IDs 49 and 22 are no longer special)
 - Remove AuthGuard from the `/noteDetails/:id` route — NoteDetail handles its own access control
-- Remove the duplicate `isAuthorized` state and `verifyToken` effect from NoteGraph; NoteGraph receives an `allowAccess` prop instead
-- NoteDetail computes `allowAccess` by checking `isShared` and token validity, passes it to NoteGraph to gate action buttons
+- Remove the duplicate `isAuthorized` state and `verifyToken` effect from NoteGraph; NoteGraph receives an `allowOperate` prop instead
+- NoteDetail computes `allowOperate` by checking `isShared` and token validity, passes it to NoteGraph to gate action buttons
 - Clean up unused imports
 
 ## Capabilities
@@ -22,7 +22,7 @@ None — this is cleanup and removal of dead code.
 
 ## Impact
 
-- **src/components/AuthGuard.tsx**: Remove `PUBLIC_PATHS`, simplify the guard to only check token existence
+- **src/components/AuthGuard.tsx**: Remove `PUBLIC_PATHS`, simplify the guard to check token existence and verify with backend
 - **src/App.tsx**: Remove AuthGuard wrapper from `/noteDetails/:id` route
-- **src/components/NoteGraph.tsx**: Remove `isAuthorized` state and effect, accept `allowAccess` prop (defaults `true`) to gate action buttons
-- **src/pages/NoteDetail/index.tsx**: Keep `verifyToken` call to compute `allowAccess`; pass `allowAccess` to NoteGraph; redirect only when `!isShared && !valid`
+- **src/components/NoteGraph.tsx**: Remove `isAuthorized` state and effect, accept `allowOperate` prop (defaults `true`) to gate action buttons
+- **src/pages/NoteDetail/index.tsx**: Keep `verifyToken` call to compute `allowOperate`; pass `allowOperate` to NoteGraph; redirect only when `!isShared && !valid`

@@ -23,23 +23,23 @@ The auth architecture has grown redundant layers:
 
 ## Decisions
 
-1. **AuthGuard stays for `/` only** — The directory graph (`/`) still requires authentication. AuthGuard is simplified: check if token exists in localStorage, if not redirect. No backend verify call, no public paths.
+1. **AuthGuard stays for `/` only** — The directory graph (`/`) still requires authentication. AuthGuard checks localStorage for a token, then verifies it with the backend via `verifyToken`. Invalid tokens are cleared and redirect to `/unauthorized`. No public paths.
 
 2. **NoteDetail is the sole gate for `/noteDetails/:id`** — The route is unprotected at the router level. NoteDetail fetches the note, checks `isShared`, and decides access:
-    - Shared → show content
-    - Not shared + token exists → show content (owner)
-    - Not shared + no token → redirect to `/unauthorized`
-      No `verifyToken` backend call — the token's existence is sufficient at the frontend level.
+   - Shared → show content
+   - Not shared + token exists → show content (owner)
+   - Not shared + no token → redirect to `/unauthorized`
+     No `verifyToken` backend call — the token's existence is sufficient at the frontend level.
 
-3. **NoteGraph receives `allowAccess` prop** — Remove the `isAuthorized` state and `verifyToken` effect entirely. NoteGraph gets a new optional prop `allowAccess` that defaults to `true`. The parent page (NoteDetail or NoteList) is responsible for computing this value. This separates concerns: NoteGraph renders, parents control access.
+3. **NoteGraph receives `allowOperate` prop** — Remove the `isAuthorized` state and `verifyToken` effect entirely. NoteGraph gets a new optional prop `allowOperate` that defaults to `true`. The parent page (NoteDetail or NoteList) is responsible for computing this value. This separates concerns: NoteGraph renders, parents control access.
 
-4. **NoteDetail computes and passes `allowAccess`** — NoteDetail calls `verifyToken` once (not three times), computes:
-    - `isShared && !valid` → `allowAccess = false` (anonymous shared-note viewer)
-    - `!isShared && !valid` → redirect to `/unauthorized`
-    - Otherwise → `allowAccess = true`
-      Then passes `allowAccess` to NoteGraph. NoteList doesn't pass it, so it defaults to `true` (AuthGuard already guards the `/` route).
+4. **NoteDetail computes and passes `allowOperate`** — NoteDetail calls `verifyToken` once (not three times), computes:
+   - `isShared && !valid` → `allowOperate = false` (anonymous shared-note viewer)
+   - `!isShared && !valid` → redirect to `/unauthorized`
+   - Otherwise → `allowOperate = true`
+     Then passes `allowOperate` to NoteGraph. NoteList doesn't pass it, so it defaults to `true` (AuthGuard already guards the `/` route).
 
 ## Risks / Trade-offs
 
 - **verifyToken still called once in NoteDetail**: This is the single point of backend token verification for the detail page. For shared-note anonymous viewers, it returns false and NoteGraph hides action buttons. Risk: Low.
-- **AuthGuard simplified for `/`**: Only checks localStorage existence, no backend call. A stale token could briefly show the UI, but mutations are rejected by the backend. Risk: Low.
+- **AuthGuard still calls `verifyToken` for `/`**: Backend verification on directory page mount adds a network call but ensures token validity before showing the UI. A stale token is caught early. Risk: Low.
