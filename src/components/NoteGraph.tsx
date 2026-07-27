@@ -40,6 +40,7 @@ interface NoteGraphProps {
 }
 
 const VIEWPORT_STORAGE_KEY = 'vnote-directory-viewport'
+const NODE_LABEL_MAX_LENGTH = 4000
 
 const loadViewportState = () => {
     try {
@@ -1221,7 +1222,7 @@ const NoteGraph = memo<NoteGraphProps>(
                                         ref={newNodeAddModalInputRef}
                                         className="bg-textarea w-full resize-none p-2 outline-none"
                                         rows={6}
-                                        maxLength={500}
+                                        maxLength={NODE_LABEL_MAX_LENGTH}
                                         value={nodeEditContent}
                                         onChange={(e) => setNodeEditContent(e.target.value)}
                                     />
@@ -1254,7 +1255,7 @@ const NoteGraph = memo<NoteGraphProps>(
                                     ref={nodeEditModalInputRef}
                                     className="bg-textarea w-full resize-none p-2 outline-none"
                                     rows={6}
-                                    maxLength={500}
+                                    maxLength={NODE_LABEL_MAX_LENGTH}
                                     value={nodeEditContent}
                                     onChange={(e) => setNodeEditContent(e.target.value)}
                                 />
@@ -1321,7 +1322,7 @@ const NoteGraph = memo<NoteGraphProps>(
                                         ref={nodeAddModalInputRef}
                                         className="bg-textarea w-full resize-none p-2 outline-none"
                                         rows={6}
-                                        maxLength={500}
+                                        maxLength={NODE_LABEL_MAX_LENGTH}
                                         value={nodeEditContent}
                                         onChange={(e) => setNodeEditContent(e.target.value)}
                                     />
