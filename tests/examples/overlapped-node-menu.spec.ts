@@ -23,7 +23,7 @@ test('right-click on a node covered by another node', async ({ page }) => {
   await createNodeWithoutSave(page, labelTop)
 
   // labelBottom 先渲染，被后渲染的 labelTop 遮挡
-  const bottomTspan = page.locator('svg tspan').filter({ hasText: labelBottom }).first()
+  // const bottomTspan = page.locator('svg tspan').filter({ hasText: labelBottom }).first()
   const topTspan = page.locator('svg tspan').filter({ hasText: labelTop }).first()
 
   // ===== 1. 不加 force → Playwright 检测到遮挡，拒绝点击 =====
